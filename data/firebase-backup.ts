@@ -147,7 +147,7 @@ function cleanDatabaseUrl(value: unknown) {
 }
 
 function cleanPath(value: unknown) {
-  return cleanEnv(value).replace(/^\/+|\/+$/g, "").replace(/[.#$/[\]]/g, "-");
+  return cleanEnv(value).replace(/^\/+|\/+$/g, "").replace(/[.#$\/[\]]/g, "-");
 }
 
 function firebaseAuthError(body: unknown) {
