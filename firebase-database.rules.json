@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "stock-report": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}

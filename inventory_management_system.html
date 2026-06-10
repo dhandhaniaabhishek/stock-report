@@ -1,0 +1,3766 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simple Stock Ledger</title>
+  <style>
+    :root {
+      --ink: #111111;
+      --muted: #737373;
+      --line: #dedede;
+      --soft: #f6f6f6;
+      --paper: #ffffff;
+      --good: #147a3f;
+      --bad: #b42318;
+      --warn: #9a6700;
+      --radius: 6px;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .shell {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 8px 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(27px, 5vw, 46px);
+      line-height: .92;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .brand p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .auth-panel,
+    .sessionbar {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin: 14px 0 0;
+      background: var(--soft);
+    }
+
+    .sessionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .sessionbar strong,
+    .auth-panel strong {
+      overflow-wrap: anywhere;
+    }
+
+    .login-help {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .login-help strong {
+      color: var(--ink);
+    }
+
+    .message-panel {
+      margin-top: 14px;
+    }
+
+    .message-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .search-line {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .scanner-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(0, 0, 0, .78);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .scanner-box {
+      width: min(520px, 100%);
+      background: white;
+      border-radius: var(--radius);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .scanner-box video {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #111;
+      border-radius: var(--radius);
+      object-fit: cover;
+    }
+
+    .store-switch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .store-switch select {
+      min-width: 190px;
+      min-height: 34px;
+      padding: 6px 9px;
+    }
+
+    .button,
+    .icon-button {
+      min-height: 40px;
+      border-radius: var(--radius);
+      border: 1px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      transition: background .16s ease, color .16s ease, border-color .16s ease;
+    }
+
+    .button {
+      padding: 0 13px;
+    }
+
+    .icon-button {
+      width: 40px;
+      padding: 0;
+      position: relative;
+    }
+
+    .button:hover,
+    .icon-button:hover,
+    .button.primary {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    .button.ghost {
+      border-color: var(--line);
+      color: var(--muted);
+    }
+
+    .button.danger {
+      border-color: var(--bad);
+      color: var(--bad);
+    }
+
+    .button.danger:hover {
+      background: var(--bad);
+      color: white;
+    }
+
+    .button.small {
+      min-height: 32px;
+      padding: 0 10px;
+      font-size: 11px;
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      position: relative;
+      display: inline-block;
+      flex: 0 0 18px;
+    }
+
+    .icon-upload::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 3px;
+      width: 2px;
+      height: 11px;
+      background: currentColor;
+    }
+
+    .icon-upload::after {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 2px;
+      width: 8px;
+      height: 8px;
+      border-top: 2px solid currentColor;
+      border-left: 2px solid currentColor;
+      transform: rotate(45deg);
+    }
+
+    .icon-download::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 2px;
+      width: 2px;
+      height: 11px;
+      background: currentColor;
+    }
+
+    .icon-download::after {
+      content: "";
+      position: absolute;
+      left: 5px;
+      bottom: 3px;
+      width: 8px;
+      height: 8px;
+      border-bottom: 2px solid currentColor;
+      border-right: 2px solid currentColor;
+      transform: rotate(45deg);
+    }
+
+    .icon-camera::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      top: 5px;
+      bottom: 3px;
+      border: 2px solid currentColor;
+      border-radius: 3px;
+    }
+
+    .icon-camera::after {
+      content: "";
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      left: 6px;
+      top: 8px;
+      border: 2px solid currentColor;
+      border-radius: 50%;
+    }
+
+    .icon-trash::before {
+      content: "";
+      position: absolute;
+      left: 5px;
+      right: 5px;
+      top: 6px;
+      bottom: 3px;
+      border: 2px solid currentColor;
+      border-top: 0;
+    }
+
+    .icon-trash::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      top: 3px;
+      height: 2px;
+      background: currentColor;
+    }
+
+    [data-tooltip]:hover::after,
+    [data-tooltip]:focus-visible::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      z-index: 20;
+      top: calc(100% + 7px);
+      right: 0;
+      width: max-content;
+      max-width: 190px;
+      padding: 7px 9px;
+      color: white;
+      background: #111;
+      border-radius: 5px;
+      font-size: 12px;
+      line-height: 1.25;
+      text-transform: none;
+      font-weight: 600;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px 0;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      min-height: 88px;
+      display: grid;
+      align-content: space-between;
+      background: #fff;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 10px;
+      font-size: clamp(24px, 5vw, 34px);
+      line-height: 1;
+      font-weight: 500;
+    }
+
+    .tabs {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      padding: 8px 0;
+      background: rgba(255, 255, 255, .96);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+    }
+
+    .tabs button {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0;
+    }
+
+    .tabs button.active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: white;
+    }
+
+    .screen {
+      display: none;
+      padding-top: 14px;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) 180px 140px;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      color: var(--ink);
+      padding: 9px 10px;
+      outline: 0;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--ink);
+      box-shadow: 0 0 0 3px rgba(17, 17, 17, .08);
+    }
+
+    input[type="file"] {
+      padding: 8px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 13px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-title h2,
+    .panel-title h3 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .panel-title p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .panel-body {
+      padding: 13px;
+    }
+
+    .stock-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .stock-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: stretch;
+      padding: 10px;
+      min-height: 116px;
+    }
+
+    .photo-box {
+      width: 86px;
+      min-height: 96px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--soft);
+      overflow: hidden;
+      position: relative;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+      padding: 6px;
+      overflow-wrap: anywhere;
+    }
+
+    .photo-box img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .product-main {
+      min-width: 0;
+      display: grid;
+      align-content: start;
+      gap: 7px;
+    }
+
+    .article-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .article-line strong {
+      font-size: 15px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .swatch {
+      width: 18px;
+      height: 18px;
+      border: 1px solid rgba(0, 0, 0, .18);
+      border-radius: 50%;
+      flex: 0 0 auto;
+      background: var(--swatch, #d4d4d4);
+    }
+
+    .description {
+      color: #262626;
+      font-size: 13px;
+      line-height: 1.28;
+      overflow-wrap: anywhere;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .tag {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+      max-width: 100%;
+    }
+
+    .stock-side {
+      display: grid;
+      align-content: space-between;
+      justify-items: end;
+      gap: 8px;
+      min-width: 70px;
+    }
+
+    .qty {
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 500;
+      text-align: right;
+    }
+
+    .qty.low {
+      color: var(--bad);
+    }
+
+    .mrp {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: right;
+    }
+
+    .upload-grid,
+    .audit-grid,
+    .staff-grid {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .count-grid,
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .mapping {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .group-total-panel {
+      margin-bottom: 12px;
+    }
+
+    .group-total-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mapping div,
+    .summary-row {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 9px;
+      min-height: 44px;
+      display: grid;
+      align-content: center;
+      background: white;
+      font-size: 12px;
+    }
+
+    .mapping strong,
+    .summary-row strong {
+      display: block;
+      font-size: 12px;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+
+    .mapping span,
+    .summary-row span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .form-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .checkbox-list {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      max-height: 280px;
+      overflow: auto;
+      background: white;
+    }
+
+    .check-item {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .check-item input {
+      width: 18px;
+      min-height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .scan-list {
+      display: grid;
+      gap: 7px;
+      margin-top: 2px;
+    }
+
+    .audit-scope-summary {
+      display: grid;
+      gap: 8px;
+    }
+
+    .audit-scope-summary .variance-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .audit-details {
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+    }
+
+    .audit-details summary {
+      cursor: pointer;
+      font-weight: 900;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .audit-detail-list {
+      display: grid;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .audit-list,
+    .staff-list,
+    .summary-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .audit-card,
+    .staff-card,
+    .count-card,
+    .admin-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .row-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .row-main strong {
+      overflow-wrap: anywhere;
+    }
+
+    .row-main small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .status {
+      border-radius: 999px;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .status.match {
+      border-color: rgba(20, 122, 63, .28);
+      color: var(--good);
+    }
+
+    .status.short {
+      border-color: rgba(180, 35, 24, .28);
+      color: var(--bad);
+    }
+
+    .status.excess {
+      border-color: rgba(154, 103, 0, .32);
+      color: var(--warn);
+    }
+
+    .variance-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+    }
+
+    .variance-grid div {
+      background: var(--soft);
+      border-radius: var(--radius);
+      padding: 8px;
+    }
+
+    .variance-grid span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 900;
+    }
+
+    .variance-grid strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .empty {
+      min-height: 170px;
+      border: 1px dashed #bdbdbd;
+      border-radius: var(--radius);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 24px;
+      font-size: 13px;
+    }
+
+    .empty strong {
+      display: block;
+      color: var(--ink);
+      font-size: 14px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 50;
+      left: 50%;
+      bottom: 18px;
+      transform: translate(-50%, 110%);
+      opacity: 0;
+      background: #111;
+      color: white;
+      border-radius: var(--radius);
+      padding: 10px 13px;
+      max-width: min(440px, calc(100vw - 28px));
+      font-size: 13px;
+      text-align: center;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 860px) {
+      .shell {
+        padding: 12px;
+      }
+
+      .topbar,
+      .upload-grid,
+      .audit-grid,
+      .staff-grid,
+      .count-grid,
+      .admin-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .top-actions {
+        justify-content: stretch;
+      }
+
+      .top-actions .button {
+        flex: 1;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .filters {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .tabs {
+        grid-template-columns: repeat(4, minmax(76px, 1fr));
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      .tabs::-webkit-scrollbar {
+        display: none;
+      }
+
+      .filters,
+      .mapping,
+      .two-cols,
+      .search-line,
+      .checkbox-list,
+      .group-total-list,
+      .audit-scope-summary .variance-grid,
+      .variance-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stock-card {
+        grid-template-columns: 74px minmax(0, 1fr);
+        grid-template-areas:
+          "photo main"
+          "photo side";
+        min-height: 124px;
+      }
+
+      .photo-box {
+        grid-area: photo;
+        width: 74px;
+        min-height: 104px;
+      }
+
+      .product-main {
+        grid-area: main;
+      }
+
+      .stock-side {
+        grid-area: side;
+        grid-template-columns: 1fr auto;
+        justify-items: start;
+        align-items: end;
+        min-width: 0;
+      }
+
+      .qty,
+      .mrp {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Stock Ledger</h1>
+        <p id="ledgerStatus">Ready for stock ledger upload</p>
+      </div>
+      <div class="top-actions">
+        <button class="button primary" id="openUploadBtn" type="button"><span class="icon icon-upload"></span>Upload</button>
+        <button class="icon-button" id="exportStockBtn" type="button" aria-label="Export stock" data-tooltip="Export stock"><span class="icon icon-download"></span></button>
+      </div>
+    </header>
+
+    <section class="auth-panel" id="loginPanel">
+      <div class="panel-title">
+        <h2>Employee Login</h2>
+        <p>Use the EMP Code and password created in the admin app</p>
+      </div>
+      <div class="filters" style="margin:12px 0 0">
+        <div class="field">
+          <label for="loginUser">EMP Code</label>
+          <input id="loginUser" autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="loginPin">Password</label>
+          <input id="loginPin" type="password" autocomplete="current-password">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="button primary" id="loginBtn" type="button">Login</button>
+        </div>
+      </div>
+      <div class="row-main" style="margin-top:10px">
+        <p class="login-help" id="loginHelpText">Checking employee login data...</p>
+        <button class="button small" id="refreshLoginBtn" type="button">Refresh Logins</button>
+      </div>
+    </section>
+
+    <section class="sessionbar hidden" id="sessionBar">
+      <div>
+        <strong id="currentUserName">Not logged in</strong>
+        <span class="tag" id="currentUserRole">Role</span>
+        <span class="tag" id="currentUserDept">Department</span>
+      </div>
+      <div class="store-switch">
+        <span class="tag" id="currentStoreName">Store</span>
+        <select id="employeeStoreSelect" aria-label="Store"></select>
+      </div>
+      <button class="button small" id="openPasswordBtn" type="button">Password</button>
+      <button class="button small" id="logoutBtn" type="button">Logout</button>
+    </section>
+
+    <section class="panel message-panel hidden" id="passwordPanel">
+      <div class="panel-head">
+        <div class="panel-title">
+          <h2>Change Password</h2>
+          <p>Update your employee login password</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <form class="filters" id="passwordForm">
+          <div class="field">
+            <label for="oldPassword">Current Password</label>
+            <input id="oldPassword" type="password" autocomplete="current-password">
+          </div>
+          <div class="field">
+            <label for="newPassword">New Password</label>
+            <input id="newPassword" type="password" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button class="button primary" type="submit">Update Password</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel message-panel hidden" id="messagePanel">
+      <div class="panel-head">
+        <div class="panel-title">
+          <h2>Instructions</h2>
+          <p id="employeeMessageStatus">No messages</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="message-list" id="employeeMessageList"></div>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Stock summary">
+      <div class="metric"><span>Closing Stock</span><strong id="metricStock">0</strong></div>
+      <div class="metric"><span>Articles</span><strong id="metricArticles">0</strong></div>
+      <div class="metric"><span>Groups</span><strong id="metricGroups">0</strong></div>
+      <div class="metric"><span>Audit Variance</span><strong id="metricVariance">0</strong></div>
+    </section>
+
+    <nav class="tabs" aria-label="Sections">
+      <button class="active" data-tab="stock" type="button">Stock</button>
+      <button data-tab="upload" type="button">Ledger</button>
+      <button data-tab="audit" type="button">Audit</button>
+      <button data-tab="count" type="button">Count</button>
+    </nav>
+
+    <main>
+      <section class="screen active" id="stockScreen">
+        <div class="filters">
+          <div class="field">
+            <label for="stockSearch">Search</label>
+            <div class="search-line">
+              <input id="stockSearch" type="search" autocomplete="off" placeholder="Article, description, colour">
+              <button class="button" id="stockScanBtn" type="button">Scan</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="groupFilter">Group</label>
+            <select id="groupFilter"></select>
+          </div>
+          <div class="field">
+            <label for="yearFilter">Year Filter</label>
+            <select id="yearFilter"></select>
+          </div>
+        </div>
+        <div class="panel group-total-panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Group Summary</h2>
+              <p id="groupTotalCaption">Year-wise group quantity</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="group-total-list" id="groupTotals"></div>
+          </div>
+        </div>
+        <div class="panel group-total-panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Other Store Stock</h2>
+              <p>Search article to see stock in every store</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="group-total-list" id="crossStoreResults"></div>
+          </div>
+        </div>
+        <div class="stock-list" id="stockList"></div>
+      </section>
+
+      <section class="screen" id="countScreen">
+        <div class="count-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Global Count</h2>
+                <p>Department wise physical count report</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <form class="form-stack" id="globalCountForm">
+                <div class="field">
+                  <label for="globalCountDate">Date</label>
+                  <input id="globalCountDate" type="date" required>
+                </div>
+                <div class="field">
+                  <label for="globalCountGroup">Department / Group</label>
+                  <select id="globalCountGroup" required></select>
+                </div>
+                <div class="field">
+                  <label for="globalCountQty">Physical Count Qty</label>
+                  <input id="globalCountQty" type="number" min="0" step="1" required>
+                </div>
+                <div class="field">
+                  <label for="globalCountNote">Note</label>
+                  <input id="globalCountNote" autocomplete="off" placeholder="Optional">
+                </div>
+                <button class="button primary" type="submit">Submit To Admin</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Count Reports</h2>
+                <p id="globalCountStatus">No reports submitted</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="audit-list" id="globalCountList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="uploadScreen">
+        <div class="upload-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Upload Ledger</h2>
+                <p id="importStatus">Use your store stock ledger file</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="form-stack">
+                <div class="field">
+                  <label for="ledgerFile">Stock ledger file</label>
+                  <input id="ledgerFile" type="file" accept=".xls,.csv,.tsv,.txt">
+                </div>
+                <div class="two-cols">
+                  <button class="button" id="loadDemoBtn" type="button">Load Demo</button>
+                  <button class="button danger" id="resetBtn" type="button">Reset Stock</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h3>Ledger Columns</h3>
+                <p>Fixed to your stock ledger format</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="mapping" id="mappingList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="adminScreen">
+        <div class="admin-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Staff Rights</h2>
+                <p>Approve login and give permissions</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="audit-list" id="adminStaffList"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Admin Approval</h2>
+                <p>Approve or reject global count reports</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="audit-list" id="adminCountList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="auditScreen">
+        <div class="audit-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Audit Scan</h2>
+                <p>Scan article number or type and press Enter</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <form class="form-stack" id="auditForm">
+                <div class="field">
+                  <label for="auditArticle">Scan Article</label>
+                  <div class="search-line">
+                    <input id="auditArticle" list="articleOptions" autocomplete="off" placeholder="Scan / type article no">
+                    <button class="button" id="auditCameraBtn" type="button">Scan</button>
+                  </div>
+                  <datalist id="articleOptions"></datalist>
+                </div>
+                <div class="field">
+                  <label for="auditScanFile">Upload Scan Excel</label>
+                  <input id="auditScanFile" type="file" accept=".xls,.csv,.tsv,.txt">
+                </div>
+                <label class="check-item hidden" id="auditFullStoreWrap">
+                  <input id="auditFullStore" type="checkbox">
+                  Full Store Scan
+                </label>
+                <div class="two-cols">
+                  <button class="button" id="scanAddBtn" type="button">Add Scan</button>
+                  <button class="button ghost" id="clearScanBtn" type="button">Clear Scan</button>
+                </div>
+                <div class="audit-scope-summary" id="auditScopeSummary"></div>
+                <div class="scan-list" id="scanBasket"></div>
+                <div class="two-cols">
+                  <div class="field">
+                    <label for="auditQty">Manual Qty</label>
+                    <input id="auditQty" type="number" min="0" step="1" placeholder="Optional">
+                  </div>
+                  <div class="field">
+                    <label for="auditStaff">Staff</label>
+                    <select id="auditStaff"></select>
+                  </div>
+                </div>
+                <button class="button primary" type="submit">Submit Audit Report</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Audit List</h2>
+                <p id="auditStatusText">No counts saved</p>
+              </div>
+              <div class="top-actions">
+                <select id="auditDeptFilter" aria-label="Audit department filter"></select>
+                <button class="button small" id="exportAuditBtn" type="button">Export</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="audit-list" id="auditList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="staffScreen">
+        <div class="staff-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Staff</h2>
+                <p>Name and department</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <form class="form-stack" id="staffForm">
+                <div class="field">
+                  <label for="staffName">Staff Name</label>
+                  <input id="staffName" autocomplete="off" required>
+                </div>
+                <div class="two-cols">
+                  <div class="field">
+                    <label for="staffUsername">EMP Code</label>
+                    <input id="staffUsername" autocomplete="off" required>
+                  </div>
+                  <div class="field">
+                    <label for="staffPin">Password</label>
+                    <input id="staffPin" autocomplete="new-password" required>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="staffRole">Role</label>
+                  <select id="staffRole">
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Department Checkbox</label>
+                  <div class="checkbox-list" id="deptCheckboxes"></div>
+                </div>
+                <button class="button primary" type="submit">Add Staff</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Departments</h2>
+                <p id="staffStatusText">No staff added</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="summary-list" id="departmentSummary"></div>
+              <div class="staff-list" id="staffList" style="margin-top:10px"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <input id="photoInput" class="hidden" type="file" accept="image/*">
+  <div class="scanner-overlay hidden" id="scannerOverlay">
+    <div class="scanner-box">
+      <div class="row-main">
+        <div>
+          <strong>Barcode Scanner</strong>
+          <small id="scannerStatus">Point camera at barcode</small>
+        </div>
+        <button class="button small" id="scannerCloseBtn" type="button">Close</button>
+      </div>
+      <video id="scannerVideo" playsinline muted></video>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const STORAGE_KEY = "simple-stock-ledger-v2";
+    const BACKUP_KEY = "simple-stock-ledger-v2-backups";
+    const EMPLOYEE_SESSION_KEY = "simple-stock-ledger-employee-session";
+    const DEFAULT_STORE_ID = "main-store";
+    const LOW_STOCK_LIMIT = 2;
+    const LEDGER_COLUMNS = {
+      article: { letter: "D", index: 3, label: "Article No" },
+      description: { letter: "F", index: 5, label: "Description" },
+      colour: { letter: "I", index: 8, label: "Colour" },
+      year: { letter: "T", index: 19, label: "Year" },
+      group: { letter: "U", index: 20, label: "Group" },
+      size: { letter: "V", index: 21, label: "Size" },
+      closingStock: { letter: "AG", index: 32, label: "Closing Stock" },
+      mrp: { letter: "AJ", index: 35, label: "MRP" }
+    };
+
+    const demoInventory = [
+      { article: "1254329JA-2-44", description: "MEN'S JACKET-T/N-F/S 44", colour: "BROWN", year: "AW25", group: "MEN JACKET FS", size: "44", closingStock: 1, mrp: 5595 },
+      { article: "1254325JA-1-40", description: "MEN'S JACKET-T/N-S/L 40", colour: "COFFEE BROWN", year: "N.A", group: "MEN JACKET SL", size: "40", closingStock: 1, mrp: 4495 },
+      { article: "1252791TP-712-38", description: "LADY'S SCEAVY TOP -H/N-F/S 38", colour: "TEAL", year: "AW25", group: "LADY SCEAVY TOP FS", size: "38", closingStock: 1, mrp: 1560 },
+      { article: "52503226-2-28", description: "BOY'S KURTA-B/N-H/S 28", colour: "BLACK", year: "SS25", group: "BOY KURTA HS", size: "28", closingStock: 1, mrp: 995 },
+      { article: "1960101027M", description: "NON WOVEN CARRY BAG 15X19 MC PRT", colour: "N.A.", year: "", group: "CARRY BAG", size: "7M", closingStock: 1500, mrp: 1500 }
+    ];
+
+    const els = {
+      ledgerStatus: document.getElementById("ledgerStatus"),
+      loginPanel: document.getElementById("loginPanel"),
+      loginUser: document.getElementById("loginUser"),
+      loginPin: document.getElementById("loginPin"),
+      loginBtn: document.getElementById("loginBtn"),
+      loginHelpText: document.getElementById("loginHelpText"),
+      refreshLoginBtn: document.getElementById("refreshLoginBtn"),
+      sessionBar: document.getElementById("sessionBar"),
+      currentUserName: document.getElementById("currentUserName"),
+      currentUserRole: document.getElementById("currentUserRole"),
+      currentUserDept: document.getElementById("currentUserDept"),
+      currentStoreName: document.getElementById("currentStoreName"),
+      employeeStoreSelect: document.getElementById("employeeStoreSelect"),
+      openPasswordBtn: document.getElementById("openPasswordBtn"),
+      passwordPanel: document.getElementById("passwordPanel"),
+      passwordForm: document.getElementById("passwordForm"),
+      oldPassword: document.getElementById("oldPassword"),
+      newPassword: document.getElementById("newPassword"),
+      messagePanel: document.getElementById("messagePanel"),
+      employeeMessageStatus: document.getElementById("employeeMessageStatus"),
+      employeeMessageList: document.getElementById("employeeMessageList"),
+      logoutBtn: document.getElementById("logoutBtn"),
+      metricStock: document.getElementById("metricStock"),
+      metricArticles: document.getElementById("metricArticles"),
+      metricGroups: document.getElementById("metricGroups"),
+      metricVariance: document.getElementById("metricVariance"),
+      stockSearch: document.getElementById("stockSearch"),
+      stockScanBtn: document.getElementById("stockScanBtn"),
+      groupFilter: document.getElementById("groupFilter"),
+      yearFilter: document.getElementById("yearFilter"),
+      groupTotals: document.getElementById("groupTotals"),
+      groupTotalCaption: document.getElementById("groupTotalCaption"),
+      stockList: document.getElementById("stockList"),
+      ledgerFile: document.getElementById("ledgerFile"),
+      importStatus: document.getElementById("importStatus"),
+      mappingList: document.getElementById("mappingList"),
+      auditForm: document.getElementById("auditForm"),
+      auditArticle: document.getElementById("auditArticle"),
+      auditCameraBtn: document.getElementById("auditCameraBtn"),
+      auditQty: document.getElementById("auditQty"),
+      auditStaff: document.getElementById("auditStaff"),
+      auditFullStoreWrap: document.getElementById("auditFullStoreWrap"),
+      auditFullStore: document.getElementById("auditFullStore"),
+      auditScopeSummary: document.getElementById("auditScopeSummary"),
+      auditScanFile: document.getElementById("auditScanFile"),
+      scanAddBtn: document.getElementById("scanAddBtn"),
+      clearScanBtn: document.getElementById("clearScanBtn"),
+      scanBasket: document.getElementById("scanBasket"),
+      articleOptions: document.getElementById("articleOptions"),
+      auditDeptFilter: document.getElementById("auditDeptFilter"),
+      auditStatusText: document.getElementById("auditStatusText"),
+      auditList: document.getElementById("auditList"),
+      globalCountForm: document.getElementById("globalCountForm"),
+      globalCountDate: document.getElementById("globalCountDate"),
+      globalCountGroup: document.getElementById("globalCountGroup"),
+      globalCountQty: document.getElementById("globalCountQty"),
+      globalCountNote: document.getElementById("globalCountNote"),
+      globalCountStatus: document.getElementById("globalCountStatus"),
+      globalCountList: document.getElementById("globalCountList"),
+      staffForm: document.getElementById("staffForm"),
+      staffName: document.getElementById("staffName"),
+      staffUsername: document.getElementById("staffUsername"),
+      staffPin: document.getElementById("staffPin"),
+      staffRole: document.getElementById("staffRole"),
+      deptCheckboxes: document.getElementById("deptCheckboxes"),
+      staffStatusText: document.getElementById("staffStatusText"),
+      departmentSummary: document.getElementById("departmentSummary"),
+      staffList: document.getElementById("staffList"),
+      adminStaffList: document.getElementById("adminStaffList"),
+      adminCountList: document.getElementById("adminCountList"),
+      photoInput: document.getElementById("photoInput"),
+      crossStoreResults: document.getElementById("crossStoreResults"),
+      scannerOverlay: document.getElementById("scannerOverlay"),
+      scannerVideo: document.getElementById("scannerVideo"),
+      scannerStatus: document.getElementById("scannerStatus"),
+      scannerCloseBtn: document.getElementById("scannerCloseBtn"),
+      toast: document.getElementById("toast")
+    };
+
+    const state = loadState();
+    const photoCache = {};
+    const scanCounts = {};
+    let pendingPhotoArticle = "";
+    let scannerStream = null;
+    let scannerFrame = 0;
+    let scannerTarget = null;
+    let scannerAfterScan = null;
+
+    els.loginBtn.addEventListener("click", login);
+    els.refreshLoginBtn.addEventListener("click", () => {
+      refreshStateFromStorage();
+      renderAll();
+      showToast("Employee login data refreshed");
+    });
+    els.logoutBtn.addEventListener("click", logout);
+    els.openPasswordBtn.addEventListener("click", () => {
+      els.passwordPanel.classList.toggle("hidden");
+    });
+    els.passwordForm.addEventListener("submit", changeEmployeePassword);
+    els.employeeStoreSelect.addEventListener("change", () => {
+      state.currentStoreId = els.employeeStoreSelect.value || DEFAULT_STORE_ID;
+      setWorkingInventory();
+      clearScanBasket(false);
+      saveState();
+      renderAll();
+      showToast(`Store selected: ${storeLabel(state.currentStoreId)}`);
+    });
+    els.loginPin.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") login();
+    });
+    document.querySelectorAll("[data-tab]").forEach((button) => {
+      button.addEventListener("click", () => switchTab(button.dataset.tab));
+    });
+
+    document.getElementById("openUploadBtn").addEventListener("click", () => switchTab("upload"));
+    document.getElementById("loadDemoBtn").addEventListener("click", () => replaceInventory(demoInventory, "Demo ledger"));
+    document.getElementById("resetBtn").addEventListener("click", resetStock);
+    document.getElementById("exportStockBtn").addEventListener("click", exportStockCsv);
+    document.getElementById("exportAuditBtn").addEventListener("click", exportAuditCsv);
+    els.ledgerFile.addEventListener("change", handleLedgerFile);
+    els.stockSearch.addEventListener("input", renderStock);
+    els.stockScanBtn.addEventListener("click", () => startBarcodeScan(els.stockSearch, renderStock));
+    els.groupFilter.addEventListener("change", renderStock);
+    els.yearFilter.addEventListener("change", renderStock);
+    els.auditForm.addEventListener("submit", saveAudit);
+    els.auditScanFile.addEventListener("change", handleAuditScanFile);
+    els.auditDeptFilter.addEventListener("change", renderAudit);
+    els.auditStaff.addEventListener("change", () => {
+      pruneScanBasketToScope();
+      renderScanBasket();
+    });
+    els.auditFullStore.addEventListener("change", () => {
+      pruneScanBasketToScope();
+      renderScanBasket();
+      showToast(els.auditFullStore.checked ? "Full store scan enabled" : "Department scan enabled");
+    });
+    els.auditArticle.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addScanFromInput();
+      }
+    });
+    els.scanAddBtn.addEventListener("click", addScanFromInput);
+    els.auditCameraBtn.addEventListener("click", () => startBarcodeScan(els.auditArticle, () => {
+      addScanFromInput();
+      return false;
+    }));
+    els.scannerCloseBtn.addEventListener("click", stopBarcodeScan);
+    els.clearScanBtn.addEventListener("click", clearScanBasket);
+    els.globalCountForm.addEventListener("submit", submitGlobalCount);
+    els.staffForm.addEventListener("submit", saveStaff);
+    els.photoInput.addEventListener("change", handlePhotoFile);
+    window.addEventListener("storage", (event) => {
+      if (event.key !== STORAGE_KEY || !currentUser()) return;
+      refreshStateFromStorage();
+      renderAll();
+    });
+    setInterval(checkForAdminUpdates, 5000);
+
+    init();
+
+    async function init() {
+      await loadAllPhotos();
+      renderMapping();
+      renderAll();
+    }
+
+    function loadState() {
+      const now = new Date().toISOString();
+      const fallback = {
+        inventory: normaliseItems(demoInventory),
+        stores: [defaultStore()],
+        inventoryByStore: { [DEFAULT_STORE_ID]: normaliseItems(demoInventory) },
+        ledgerByStore: { [DEFAULT_STORE_ID]: { name: "Demo ledger", date: now } },
+        audits: [],
+        staff: seedStaff(),
+        globalCounts: [],
+        messages: [],
+        currentUserId: sessionStorage.getItem(EMPLOYEE_SESSION_KEY) || "",
+        currentStoreId: DEFAULT_STORE_ID,
+        ledgerName: "Demo ledger",
+        ledgerDate: now,
+        updatedAt: now
+      };
+      ensureStores(fallback);
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!saved) return fallback;
+        const loaded = {
+          inventory: normaliseItems(Array.isArray(saved.inventory) ? saved.inventory : []),
+          stores: Array.isArray(saved.stores) ? saved.stores : [],
+          inventoryByStore: saved.inventoryByStore && typeof saved.inventoryByStore === "object" ? saved.inventoryByStore : {},
+          ledgerByStore: saved.ledgerByStore && typeof saved.ledgerByStore === "object" ? saved.ledgerByStore : {},
+          audits: Array.isArray(saved.audits) ? saved.audits : [],
+          staff: normalizeStaff(Array.isArray(saved.staff) ? saved.staff : fallback.staff),
+          globalCounts: Array.isArray(saved.globalCounts) ? saved.globalCounts : [],
+          messages: Array.isArray(saved.messages) ? saved.messages : [],
+          currentUserId: sessionStorage.getItem(EMPLOYEE_SESSION_KEY) || "",
+          currentStoreId: saved.currentStoreId || DEFAULT_STORE_ID,
+          ledgerName: saved.ledgerName || fallback.ledgerName,
+          ledgerDate: saved.ledgerDate || fallback.ledgerDate,
+          updatedAt: saved.updatedAt || fallback.updatedAt
+        };
+        ensureStores(loaded);
+        ensureAdminUser(loaded);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...loaded, currentUserId: "" }));
+        return loaded;
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function saveState() {
+      state.updatedAt = new Date().toISOString();
+      const snapshot = { ...state, currentUserId: "" };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+      writeAutoBackup(snapshot);
+    }
+
+    function writeAutoBackup(snapshot) {
+      try {
+        const now = new Date();
+        const backups = JSON.parse(localStorage.getItem(BACKUP_KEY) || "[]");
+        const backup = { id: uid(), at: now.toISOString(), source: "employee", data: snapshot };
+        if (backups[0] && now - new Date(backups[0].at) < 120000) backups[0] = backup;
+        else backups.unshift(backup);
+        localStorage.setItem(BACKUP_KEY, JSON.stringify(backups.slice(0, 5)));
+      } catch (error) {
+        console.warn("Auto backup skipped", error);
+      }
+    }
+
+    function refreshStateFromStorage() {
+      const currentEmpCode = els.loginUser.value;
+      const currentPassword = els.loginPin.value;
+      const fresh = loadState();
+      Object.keys(state).forEach((key) => delete state[key]);
+      Object.assign(state, fresh);
+      els.loginUser.value = currentEmpCode;
+      els.loginPin.value = currentPassword;
+    }
+
+    function checkForAdminUpdates() {
+      const user = currentUser();
+      if (!user) return;
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        if (!saved.updatedAt || saved.updatedAt === state.updatedAt) return;
+        const oldUnread = relevantMessages(user).filter((message) => !(message.readBy || []).includes(user.id)).length;
+        refreshStateFromStorage();
+        renderAll();
+        const newUnread = relevantMessages(currentUser()).filter((message) => !(message.readBy || []).includes(currentUser()?.id)).length;
+        if (newUnread > oldUnread) showToast("New admin instruction received");
+      } catch (error) {
+        console.warn("Auto update skipped", error);
+      }
+    }
+
+    function relevantMessages(user = currentUser()) {
+      if (!user) return [];
+      const departments = staffDepartments(user).map((department) => department.toLowerCase());
+      const allDepartments = departments.includes("all");
+      return (state.messages || []).filter((message) => {
+        const storeOk = message.storeId === "all" || (message.storeId || DEFAULT_STORE_ID) === state.currentStoreId;
+        const department = clean(message.department || "all").toLowerCase();
+        const deptOk = department === "all" || allDepartments || departments.includes(department);
+        return message.active !== false && storeOk && deptOk;
+      });
+    }
+
+    function renderEmployeeMessages() {
+      const user = currentUser();
+      const messages = relevantMessages(user);
+      els.messagePanel.classList.toggle("hidden", !user || !messages.length);
+      if (!user || !messages.length) {
+        els.employeeMessageList.innerHTML = "";
+        return;
+      }
+      const unread = messages.filter((message) => !(message.readBy || []).includes(user.id));
+      els.employeeMessageStatus.textContent = `${formatNumber(unread.length)} unread / ${formatNumber(messages.length)} total`;
+      els.employeeMessageList.innerHTML = messages.map((message) => {
+        const read = (message.readBy || []).includes(user.id);
+        return `
+          <article class="audit-card">
+            <div class="row-main">
+              <div>
+                <strong>${escapeHtml(message.title)}</strong>
+                <small>${escapeHtml(message.department === "all" ? "All departments" : message.department)} - ${new Date(message.createdAt).toLocaleString()}</small>
+              </div>
+              <span class="status ${read ? "match" : "excess"}">${read ? "Read" : "New"}</span>
+            </div>
+            <p>${escapeHtml(message.body)}</p>
+            <div class="top-actions" style="justify-content:flex-start">
+              <button class="button small" type="button" data-read-message="${escapeHtml(message.id)}">Mark Read</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+      els.employeeMessageList.querySelectorAll("[data-read-message]").forEach((button) => {
+        button.addEventListener("click", () => markMessageRead(button.dataset.readMessage));
+      });
+    }
+
+    function markMessageRead(id) {
+      const user = currentUser();
+      const message = (state.messages || []).find((item) => item.id === id);
+      if (!user || !message) return;
+      message.readBy = Array.isArray(message.readBy) ? message.readBy : [];
+      if (!message.readBy.includes(user.id)) message.readBy.push(user.id);
+      saveState();
+      renderAll();
+      showToast("Instruction marked read");
+    }
+
+    function changeEmployeePassword(event) {
+      event.preventDefault();
+      const user = currentUser();
+      if (!user) return;
+      const oldPassword = clean(els.oldPassword.value);
+      const newPassword = clean(els.newPassword.value);
+      if (!newPassword) {
+        showToast("New password required");
+        return;
+      }
+      if (clean(user.password || user.pin) !== oldPassword && clean(user.pin) !== oldPassword) {
+        showToast("Current password not matching");
+        return;
+      }
+      user.password = newPassword;
+      user.pin = newPassword;
+      els.passwordForm.reset();
+      els.passwordPanel.classList.add("hidden");
+      saveState();
+      renderAll();
+      showToast("Password updated");
+    }
+
+    function defaultStore() {
+      return {
+        id: DEFAULT_STORE_ID,
+        name: "Main Store",
+        place: "",
+        details: "Default store",
+        active: true
+      };
+    }
+
+    function ensureStores(targetState = state) {
+      const stores = Array.isArray(targetState.stores) ? targetState.stores : [];
+      targetState.stores = stores.length
+        ? stores.map((store) => ({
+          id: clean(store.id) || uid(),
+          name: clean(store.name) || "Store",
+          place: clean(store.place),
+          details: clean(store.details),
+          active: store.active !== false
+        }))
+        : [defaultStore()];
+
+      const byStore = {};
+      if (targetState.inventoryByStore && typeof targetState.inventoryByStore === "object") {
+        Object.entries(targetState.inventoryByStore).forEach(([storeId, items]) => {
+          byStore[clean(storeId) || DEFAULT_STORE_ID] = normaliseItems(Array.isArray(items) ? items : []);
+        });
+      }
+      if (!Object.keys(byStore).length) {
+        byStore[targetState.currentStoreId || targetState.stores[0].id || DEFAULT_STORE_ID] = normaliseItems(Array.isArray(targetState.inventory) ? targetState.inventory : []);
+      }
+      targetState.stores.forEach((store) => {
+        if (!Array.isArray(byStore[store.id])) byStore[store.id] = [];
+      });
+
+      targetState.inventoryByStore = byStore;
+      targetState.ledgerByStore = targetState.ledgerByStore && typeof targetState.ledgerByStore === "object" ? targetState.ledgerByStore : {};
+      if (!targetState.ledgerByStore[targetState.currentStoreId || DEFAULT_STORE_ID] && (targetState.ledgerName || targetState.ledgerDate)) {
+        targetState.ledgerByStore[targetState.currentStoreId || DEFAULT_STORE_ID] = {
+          name: targetState.ledgerName || "Stock ledger",
+          date: targetState.ledgerDate || ""
+        };
+      }
+      setWorkingInventory(targetState);
+    }
+
+    function setWorkingInventory(targetState = state) {
+      const storeId = activeStoreId(targetState, arguments.length === 0);
+      targetState.currentStoreId = storeId;
+      targetState.inventory = normaliseItems(targetState.inventoryByStore?.[storeId] || []);
+      const ledger = targetState.ledgerByStore?.[storeId] || {};
+      targetState.ledgerName = ledger.name || targetState.ledgerName || "Stock ledger";
+      targetState.ledgerDate = ledger.date || targetState.ledgerDate || "";
+    }
+
+    function activeStoreId(targetState = state, restrictToEmployeeStores = true) {
+      const stores = Array.isArray(targetState.stores) && targetState.stores.length ? targetState.stores : [defaultStore()];
+      const validStoreIds = stores.filter((store) => store.active !== false).map((store) => store.id);
+      const allowedStoreIds = restrictToEmployeeStores ? employeeStoreIds() : validStoreIds;
+      const current = targetState.currentStoreId || validStoreIds[0] || DEFAULT_STORE_ID;
+      if (allowedStoreIds.includes(current) && validStoreIds.includes(current)) return current;
+      return allowedStoreIds.find((storeId) => validStoreIds.includes(storeId)) || validStoreIds[0] || DEFAULT_STORE_ID;
+    }
+
+    function employeeStoreIds(user = currentUser()) {
+      const storeIds = staffStoreIds(user);
+      if (!user || storeIds.includes("ALL")) return state.stores.filter((store) => store.active !== false).map((store) => store.id);
+      return storeIds;
+    }
+
+    function staffStoreIds(staff) {
+      if (!staff) return [];
+      const role = staff.role || (staff.username === "admin" ? "admin" : "staff");
+      if (role === "admin" || staff.rights?.canAdmin) return ["ALL"];
+      if (Array.isArray(staff.storeIds)) return staff.storeIds.map(clean).filter(Boolean);
+      const storeId = clean(staff.storeId);
+      return storeId ? [storeId] : [DEFAULT_STORE_ID];
+    }
+
+    function storeLabel(storeId) {
+      const store = state.stores.find((item) => item.id === storeId);
+      if (!store) return "Store";
+      return [store.name, store.place].filter(Boolean).join(" - ");
+    }
+
+    function storeRecordMatches(record, storeId = state.currentStoreId) {
+      return (record.storeId || DEFAULT_STORE_ID) === storeId;
+    }
+
+    function fillEmployeeStoreSelect(user = currentUser()) {
+      const storeIds = employeeStoreIds(user);
+      const stores = state.stores.filter((store) => store.active !== false && storeIds.includes(store.id));
+      els.employeeStoreSelect.innerHTML = stores.map((store) => `<option value="${escapeHtml(store.id)}">${escapeHtml([store.name, store.place].filter(Boolean).join(" - "))}</option>`).join("");
+      if (!stores.some((store) => store.id === state.currentStoreId)) {
+        state.currentStoreId = stores[0]?.id || DEFAULT_STORE_ID;
+        setWorkingInventory();
+      }
+      els.employeeStoreSelect.value = state.currentStoreId;
+      els.employeeStoreSelect.disabled = stores.length <= 1;
+      els.currentStoreName.textContent = storeLabel(state.currentStoreId);
+    }
+
+    function seedStaff() {
+      return [
+        {
+          id: "admin",
+          name: "Admin",
+          empCode: "admin",
+          username: "admin",
+          phone: "9999999999",
+          pin: "admin",
+          password: "admin",
+          role: "admin",
+          departments: ["ALL"],
+          department: "ALL",
+          storeIds: ["ALL"],
+          storeId: "ALL",
+          approved: true,
+          active: true,
+          rights: defaultRights("admin")
+        }
+      ];
+    }
+
+    function defaultRights(role) {
+      return {
+        canAudit: true,
+        canGlobalCount: true,
+        canUploadLedger: true,
+        canFullStoreAudit: role === "admin",
+        canManageStaff: role === "admin",
+        canAdmin: role === "admin"
+      };
+    }
+
+    function normalizeStaff(staffList) {
+      const normalized = staffList.filter((staff) => !isOldDemoStaff(staff)).map((staff) => {
+        const role = staff.role || (staff.username === "admin" ? "admin" : "staff");
+        const departments = staffDepartments(staff);
+        const storeIds = staffStoreIds({ ...staff, role });
+        const empCode = clean(staff.empCode || staff.employeeCode || staff.code || staff.username || staff.phone || (role === "admin" ? "admin" : ""));
+        const phone = staff.phone || staff.mobile || "";
+        return {
+          ...staff,
+          id: staff.id || uid(),
+          empCode,
+          phone,
+          password: staff.password || staff.pin || "1234",
+          username: empCode || clean(staff.name).toLowerCase().replace(/\s+/g, "."),
+          pin: staff.pin || staff.password || "1234",
+          role,
+          departments: departments.length ? departments : (role === "admin" ? ["ALL"] : []),
+          department: departments.length ? departments.join(", ") : (role === "admin" ? "ALL" : ""),
+          storeIds,
+          storeId: storeIds[0] || DEFAULT_STORE_ID,
+          approved: staff.approved !== false || role === "admin",
+          active: staff.active !== false,
+          rights: { ...defaultRights(role), ...(staff.rights || {}) }
+        };
+      });
+      ensureAdminUser({ staff: normalized });
+      return normalized;
+    }
+
+    function isOldDemoStaff(staff) {
+      const name = clean(staff.name).toLowerCase();
+      const code = codeKey(staff.empCode || staff.username || staff.phone);
+      return (name === "ravi kumar" && code === "9876543210") || (name === "anita sharma" && code === "9876501234");
+    }
+
+    function ensureAdminUser(targetState = state) {
+      if (!targetState.staff.some((staff) => staff.username === "admin")) {
+        targetState.staff.unshift(seedStaff()[0]);
+      }
+    }
+
+    function currentUser() {
+      const staff = state.staff.find((person) => person.id === state.currentUserId && person.active !== false) || null;
+      if (!staff) return null;
+      return staff.role === "admin" || staff.rights?.canAdmin ? null : staff;
+    }
+
+    function isAdmin(user = currentUser()) {
+      return user?.role === "admin" || user?.rights?.canAdmin;
+    }
+
+    function hasRight(right, user = currentUser()) {
+      if (!user || user.approved === false || user.active === false) return false;
+      if (isAdmin(user)) return true;
+      return !!user.rights?.[right];
+    }
+
+    function activeEmployees() {
+      return state.staff.filter((staff) => staff.active !== false && !isAdmin(staff));
+    }
+
+    function renderLoginHelp() {
+      const employees = activeEmployees();
+      if (!employees.length) {
+        els.loginHelpText.innerHTML = "<strong>No employee login found.</strong> Create employee in admin app, then press Refresh Logins.";
+        return;
+      }
+      els.loginHelpText.innerHTML = `<strong>${formatNumber(employees.length)} employee login ready.</strong> Use EMP Code and password from admin app.`;
+    }
+
+    function userDepartments(user = currentUser()) {
+      if (!user) return [];
+      const departments = staffDepartments(user);
+      return departments.includes("ALL") || isAdmin(user) ? unique(state.inventory.map((item) => item.group)) : departments;
+    }
+
+    function login() {
+      refreshStateFromStorage();
+      const empCode = codeKey(els.loginUser.value);
+      const password = clean(els.loginPin.value);
+      if (!empCode || !password) {
+        showToast("Enter EMP Code and password");
+        renderLoginHelp();
+        return;
+      }
+      const codeMatches = state.staff.filter((staff) => {
+        const savedCode = codeKey(staff.empCode || staff.username);
+        return savedCode === empCode;
+      });
+      const user = codeMatches.find((staff) => {
+        const savedPassword = clean(staff.password || staff.pin);
+        const savedPin = clean(staff.pin);
+        return (savedPassword === password || savedPin === password) && staff.active !== false;
+      });
+      if (!user) {
+        if (!activeEmployees().length) showToast("No active employee login found in admin app");
+        else if (codeMatches.length && !codeMatches.some((staff) => staff.active !== false)) showToast("Employee is deleted or inactive in admin");
+        else if (codeMatches.length) showToast("Password not matching");
+        else showToast("EMP Code not found. Create employee in admin app");
+        renderLoginHelp();
+        return;
+      }
+      if (user.role === "admin" || user.rights?.canAdmin) {
+        showToast("Use the admin app for admin login");
+        return;
+      }
+      if (user.approved === false) {
+        showToast("Login waiting for admin approval");
+        return;
+      }
+      state.currentUserId = user.id;
+      sessionStorage.setItem(EMPLOYEE_SESSION_KEY, user.id);
+      els.loginPin.value = "";
+      saveState();
+      renderAll();
+      showToast(`Logged in: ${user.name}`);
+    }
+
+    function logout() {
+      state.currentUserId = "";
+      sessionStorage.removeItem(EMPLOYEE_SESSION_KEY);
+      saveState();
+      renderAll();
+      showToast("Logged out");
+    }
+
+    function renderAll() {
+      ensureStores();
+      syncControls();
+      renderSession();
+      renderMetrics();
+      renderStock();
+      renderAudit();
+      renderScanBasket();
+      renderGlobalCount();
+      renderEmployeeMessages();
+    }
+
+    function renderSession() {
+      const user = currentUser();
+      const locked = !user;
+      els.loginPanel.classList.toggle("hidden", !locked);
+      els.sessionBar.classList.toggle("hidden", locked);
+      document.querySelector(".metrics").classList.toggle("hidden", locked);
+      document.querySelector(".tabs").classList.toggle("hidden", locked);
+      document.querySelector("main").classList.toggle("hidden", locked);
+      if (locked) {
+        renderLoginHelp();
+        return;
+      }
+
+      els.currentUserName.textContent = user.name;
+      els.currentUserRole.textContent = user.role || "staff";
+      els.currentUserDept.textContent = staffDepartmentLabel(user);
+      fillEmployeeStoreSelect(user);
+      document.querySelectorAll("[data-tab]").forEach((button) => {
+        const tab = button.dataset.tab;
+        button.classList.toggle("hidden", !canAccessTab(tab));
+      });
+      if (!canAccessTab(document.querySelector("[data-tab].active")?.dataset.tab)) {
+        switchTab("stock");
+      }
+      document.getElementById("openUploadBtn").classList.toggle("hidden", !hasRight("canUploadLedger"));
+      document.getElementById("resetBtn").classList.toggle("hidden", !hasRight("canUploadLedger"));
+      els.ledgerFile.disabled = !hasRight("canUploadLedger");
+    }
+
+    function canAccessTab(tab) {
+      if (tab === "stock") return !!currentUser();
+      if (tab === "upload") return hasRight("canUploadLedger");
+      if (tab === "audit") return hasRight("canAudit");
+      if (tab === "count") return hasRight("canGlobalCount");
+      if (tab === "staff" || tab === "admin") return false;
+      return false;
+    }
+
+    function renderMapping() {
+      els.mappingList.innerHTML = Object.values(LEDGER_COLUMNS).map((col) => `
+        <div><strong>${escapeHtml(col.letter)} - ${escapeHtml(col.label)}</strong><span>Column ${col.index + 1}</span></div>
+      `).join("");
+    }
+
+    function syncControls() {
+      const groups = unique(state.inventory.map((item) => item.group));
+      const years = unique(state.inventory.map((item) => item.year)).filter(Boolean);
+      const allowedGroups = currentUser() ? userDepartments() : groups;
+      fillSelect(els.groupFilter, "All groups", allowedGroups);
+      fillSelect(els.yearFilter, "All years", years);
+      fillSelect(els.auditDeptFilter, "All departments", allowedGroups);
+      fillSelect(els.globalCountGroup, "Select department", allowedGroups, false);
+      els.articleOptions.innerHTML = state.inventory.map((item) => `<option value="${escapeHtml(item.article)}">${escapeHtml(item.description)}</option>`).join("");
+      renderDepartmentCheckboxes(groups);
+      const user = currentUser();
+      const activeStaff = isAdmin(user)
+        ? state.staff.filter((staff) => staff.active !== false && staffStoreIds(staff).includes(state.currentStoreId))
+        : [user].filter(Boolean);
+      els.auditStaff.innerHTML = activeStaff.length
+        ? activeStaff.map((staff) => `<option value="${escapeHtml(staff.id)}">${escapeHtml(staff.name)} - ${escapeHtml(staffDepartmentLabel(staff))}</option>`).join("")
+        : `<option value="">No staff</option>`;
+      if (user && activeStaff.some((staff) => staff.id === user.id)) els.auditStaff.value = user.id;
+      els.auditStaff.disabled = !isAdmin(user);
+    }
+
+    function fillSelect(select, allLabel, values, includeAll = true) {
+      const current = select.value;
+      select.innerHTML = (includeAll ? `<option value="all">${escapeHtml(allLabel)}</option>` : `<option value="">${escapeHtml(allLabel)}</option>`)
+        + values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
+      if (Array.from(select.options).some((option) => option.value === current)) select.value = current;
+    }
+
+    function renderMetrics() {
+      const total = state.inventory.reduce((sum, item) => sum + numeric(item.closingStock), 0);
+      const storeAudits = state.audits.filter((audit) => storeRecordMatches(audit));
+      const variance = storeAudits.reduce((sum, audit) => sum + numeric(audit.variance), 0);
+      const ledger = state.ledgerByStore?.[state.currentStoreId] || {};
+      els.metricStock.textContent = formatNumber(total);
+      els.metricArticles.textContent = formatNumber(unique(state.inventory.map((item) => item.article)).length);
+      els.metricGroups.textContent = formatNumber(unique(state.inventory.map((item) => item.group)).length);
+      els.metricVariance.textContent = signed(variance);
+      els.ledgerStatus.textContent = `${storeLabel(state.currentStoreId)} - ${ledger.name || state.ledgerName || "Stock ledger"} - ${formatNumber(state.inventory.length)} items`;
+      els.importStatus.textContent = ledger.date ? `Last upload ${new Date(ledger.date).toLocaleString()}` : "Use your store stock ledger file";
+    }
+
+    function renderStock() {
+      const query = clean(els.stockSearch.value).toLowerCase();
+      const group = els.groupFilter.value;
+      const year = els.yearFilter.value;
+      const allowedGroups = userDepartments().map((item) => item.toLowerCase());
+      const filtered = state.inventory.filter((item) => {
+        const haystack = [item.article, item.baseArticle, item.shadeCode, item.description, item.colour, item.group, item.size, item.year].join(" ").toLowerCase();
+        return (!query || haystack.includes(query))
+          && (!allowedGroups.length || allowedGroups.includes(clean(item.group).toLowerCase()))
+          && (group === "all" || item.group === group)
+          && (year === "all" || item.year === year);
+      });
+      renderGroupTotals(filtered);
+      renderCrossStoreSearch(query);
+
+      if (!filtered.length) {
+        els.stockList.innerHTML = `<div class="empty"><div><strong>No stock found</strong><span>Upload ledger or clear filters.</span></div></div>`;
+        return;
+      }
+
+      const visible = filtered.slice(0, 500);
+      els.stockList.innerHTML = visible.map((item) => stockCard(item)).join("");
+      els.stockList.querySelectorAll("[data-photo]").forEach((button) => {
+        button.addEventListener("click", () => {
+          pendingPhotoArticle = button.dataset.photo;
+          els.photoInput.value = "";
+          els.photoInput.click();
+        });
+      });
+      els.stockList.querySelectorAll("[data-remove-photo]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          await deleteArticlePhoto(button.dataset.removePhoto);
+          showToast("Photo removed");
+        });
+      });
+    }
+
+    function renderGroupTotals(items) {
+      const group = els.groupFilter.value;
+      const year = els.yearFilter.value;
+      const captionParts = [];
+      captionParts.push(year === "all" ? "All years" : `Year ${year}`);
+      captionParts.push(group === "all" ? "All groups" : group);
+      els.groupTotalCaption.textContent = captionParts.join(" - ");
+
+      if (!items.length) {
+        els.groupTotals.innerHTML = `<div class="empty"><div><strong>No group total</strong><span>Change year or group filter.</span></div></div>`;
+        return;
+      }
+
+      const totals = new Map();
+      items.forEach((item) => {
+        const key = item.group || "N.A.";
+        if (!totals.has(key)) totals.set(key, { qty: 0, articles: new Set(), shades: new Set(), sizes: new Set() });
+        const total = totals.get(key);
+        total.qty += numeric(item.closingStock);
+        total.articles.add(item.baseArticle || item.article);
+        if (item.shadeCode) total.shades.add(item.shadeCode);
+        if (item.size) total.sizes.add(item.size);
+      });
+
+      els.groupTotals.innerHTML = Array.from(totals.entries())
+        .sort((a, b) => b[1].qty - a[1].qty)
+        .map(([name, total]) => `
+          <div class="summary-row">
+            <strong>${escapeHtml(name)}</strong>
+            <span>Qty ${formatNumber(total.qty)} | ${formatNumber(total.articles.size)} articles | ${formatNumber(total.shades.size)} shades | ${formatNumber(total.sizes.size)} sizes</span>
+          </div>
+        `).join("");
+    }
+
+    function renderCrossStoreSearch(query) {
+      const value = clean(query).toLowerCase();
+      if (!value) {
+        els.crossStoreResults.innerHTML = `<div class="empty"><div><strong>Search article</strong><span>Type or scan article to see all store stock.</span></div></div>`;
+        return;
+      }
+
+      const rows = allStoreInventory().filter(({ item }) => {
+        const haystack = [item.article, item.baseArticle, item.shadeCode, item.description, item.colour, item.group, item.size, item.year].join(" ").toLowerCase();
+        return haystack.includes(value);
+      });
+      if (!rows.length) {
+        els.crossStoreResults.innerHTML = `<div class="empty"><div><strong>No store stock found</strong><span>Try full article number or base article.</span></div></div>`;
+        return;
+      }
+
+      const totals = new Map();
+      rows.forEach(({ storeId, item }) => {
+        const key = `${storeId}|${item.article}`;
+        if (!totals.has(key)) {
+          totals.set(key, {
+            storeId,
+            article: item.article,
+            description: item.description,
+            group: item.group,
+            colour: item.colour,
+            size: item.size,
+            qty: 0
+          });
+        }
+        totals.get(key).qty += numeric(item.closingStock);
+      });
+
+      els.crossStoreResults.innerHTML = Array.from(totals.values())
+        .sort((a, b) => storeLabel(a.storeId).localeCompare(storeLabel(b.storeId)) || a.article.localeCompare(b.article))
+        .slice(0, 60)
+        .map((row) => `
+          <div class="summary-row">
+            <strong>${escapeHtml(row.article)} <span class="tag">${escapeHtml(storeLabel(row.storeId))}</span></strong>
+            <span>Qty ${formatNumber(row.qty)} | ${escapeHtml(row.group || "N.A.")} | ${escapeHtml(row.colour || "N.A.")} | Size ${escapeHtml(row.size || "N.A.")}</span>
+          </div>
+        `).join("");
+    }
+
+    function allStoreInventory() {
+      const source = state.inventoryByStore && Object.keys(state.inventoryByStore).length
+        ? state.inventoryByStore
+        : { [state.currentStoreId || DEFAULT_STORE_ID]: state.inventory };
+      return Object.entries(source).flatMap(([storeId, items]) =>
+        normaliseItems(Array.isArray(items) ? items : []).map((item) => ({ storeId, item }))
+      );
+    }
+
+    async function startBarcodeScan(targetInput, afterScan) {
+      if (!targetInput) return;
+      if (!("BarcodeDetector" in window)) {
+        showToast("Camera barcode scanner not supported in this browser");
+        return;
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        showToast("Camera permission not available");
+        return;
+      }
+
+      stopBarcodeScan();
+      scannerTarget = targetInput;
+      scannerAfterScan = afterScan;
+      els.scannerOverlay.classList.remove("hidden");
+      els.scannerStatus.textContent = "Starting camera...";
+
+      try {
+        scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
+        els.scannerVideo.srcObject = scannerStream;
+        await els.scannerVideo.play();
+        const detector = await createBarcodeDetector();
+        els.scannerStatus.textContent = "Point camera at barcode";
+
+        const scanLoop = async () => {
+          if (!scannerStream) return;
+          try {
+            const codes = await detector.detect(els.scannerVideo);
+            if (codes.length) {
+              const value = clean(codes[0].rawValue || codes[0].displayValue || "");
+              if (value) {
+                const target = scannerTarget;
+                const callback = scannerAfterScan;
+                target.value = value;
+                stopBarcodeScan();
+                const result = callback ? callback(value) : undefined;
+                if (result !== false) showToast(`Scanned ${value}`);
+                return;
+              }
+            }
+          } catch (error) {
+            console.warn("Barcode scan skipped", error);
+          }
+          scannerFrame = requestAnimationFrame(scanLoop);
+        };
+        scanLoop();
+      } catch (error) {
+        stopBarcodeScan();
+        showToast(error.name === "NotAllowedError" ? "Camera permission denied" : "Camera scanner could not start");
+        console.warn("Camera scanner failed", error);
+      }
+    }
+
+    async function createBarcodeDetector() {
+      const wanted = ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "qr_code"];
+      try {
+        const supported = BarcodeDetector.getSupportedFormats
+          ? (await BarcodeDetector.getSupportedFormats()).filter((format) => wanted.includes(format))
+          : wanted;
+        return new BarcodeDetector(supported.length ? { formats: supported } : undefined);
+      } catch (error) {
+        return new BarcodeDetector();
+      }
+    }
+
+    function stopBarcodeScan() {
+      if (scannerFrame) cancelAnimationFrame(scannerFrame);
+      scannerFrame = 0;
+      if (scannerStream) {
+        scannerStream.getTracks().forEach((track) => track.stop());
+        scannerStream = null;
+      }
+      els.scannerVideo.srcObject = null;
+      els.scannerOverlay.classList.add("hidden");
+      scannerTarget = null;
+      scannerAfterScan = null;
+    }
+
+    function stockCard(item) {
+      const photo = photoCache[item.article] || "";
+      const low = numeric(item.closingStock) <= LOW_STOCK_LIMIT ? " low" : "";
+      const canEditPhoto = hasRight("canUploadLedger");
+      return `
+        <article class="stock-card">
+          <div class="photo-box">
+            ${photo ? `<img src="${photo}" alt="${escapeHtml(item.article)}">` : `<span>${escapeHtml(item.article)}</span>`}
+          </div>
+          <div class="product-main">
+            <div class="article-line">
+              <span class="swatch" style="--swatch:${colourToCss(item.colour)}"></span>
+              <strong>${escapeHtml(item.article)}</strong>
+            </div>
+            <div class="description">${escapeHtml(item.description || "-")}</div>
+            <div class="tags">
+              <span class="tag">Article ${escapeHtml(item.baseArticle || item.article)}</span>
+              ${item.shadeCode ? `<span class="tag">Shade ${escapeHtml(item.shadeCode)}</span>` : ""}
+              <span class="tag">${escapeHtml(item.colour || "N.A.")}</span>
+              <span class="tag">Size ${escapeHtml(item.size || "N.A.")}</span>
+              <span class="tag">${escapeHtml(item.group || "N.A.")}</span>
+              ${item.year ? `<span class="tag">${escapeHtml(item.year)}</span>` : ""}
+            </div>
+          </div>
+          <div class="stock-side">
+            <div>
+              <div class="qty${low}">${formatNumber(item.closingStock)}</div>
+              <div class="mrp">MRP ${formatNumber(item.mrp)}</div>
+            </div>
+            <div class="top-actions ${canEditPhoto ? "" : "hidden"}">
+              <button class="icon-button" type="button" data-photo="${escapeHtml(item.article)}" aria-label="Upload article photo" data-tooltip="Upload photo"><span class="icon icon-camera"></span></button>
+              ${photo ? `<button class="icon-button" type="button" data-remove-photo="${escapeHtml(item.article)}" aria-label="Remove article photo" data-tooltip="Remove photo"><span class="icon icon-trash"></span></button>` : ""}
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    async function handleLedgerFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const rows = await readLedgerRows(file);
+        const items = rowsToInventory(rows);
+        if (!items.length) throw new Error("No stock rows found in selected columns");
+        replaceInventory(items, file.name);
+      } catch (error) {
+        showToast(error.message || "Ledger import failed");
+      } finally {
+        event.target.value = "";
+      }
+    }
+
+    async function readLedgerRows(file) {
+      const name = file.name.toLowerCase();
+      if (name.endsWith(".xls")) {
+        const buffer = await file.arrayBuffer();
+        return parseXlsWorkbook(buffer);
+      }
+      const text = await file.text();
+      return parseDelimited(text);
+    }
+
+    async function handleAuditScanFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const rows = await readLedgerRows(file);
+        const entries = rowsToScanEntries(rows);
+        if (!entries.length) throw new Error("No scan entries found");
+        const staff = selectedAuditStaff();
+        let added = 0;
+        let skipped = 0;
+        entries.forEach((entry) => {
+          const item = findArticle(entry.article);
+          if (!item || !canStaffScanItem(item, staff)) {
+            skipped += 1;
+            return;
+          }
+          scanCounts[item.article] = (scanCounts[item.article] || 0) + numeric(entry.qty || 1);
+          added += 1;
+        });
+        renderScanBasket();
+        showToast(`${formatNumber(added)} scan entries added${skipped ? `, ${formatNumber(skipped)} skipped` : ""}`);
+      } catch (error) {
+        showToast(error.message || "Scan file import failed");
+      } finally {
+        event.target.value = "";
+      }
+    }
+
+    function rowsToScanEntries(rows) {
+      if (!rows || !rows.length) return [];
+      const header = rows[0].map((cell) => clean(cell).toLowerCase().replace(/[^a-z0-9_]/g, ""));
+      const articleAliases = ["scan", "scancode", "barcode", "article", "articleno", "articlecode", "artcode", "art_code", "sku"];
+      const qtyAliases = ["scanqty", "countedqty", "countqty", "qty", "quantity", "count"];
+      const articleIndex = header.findIndex((cell) => articleAliases.includes(cell));
+      const qtyIndex = header.findIndex((cell) => qtyAliases.includes(cell));
+      const entries = [];
+
+      rows.forEach((row, index) => {
+        if (!row || !row.length) return;
+        if (index === 0 && articleIndex >= 0) return;
+        const article = articleIndex >= 0 ? clean(row[articleIndex]) : firstScanCell(row);
+        if (!article || /article|barcode|scan|total/i.test(article)) return;
+        const qty = qtyIndex >= 0 ? Math.max(0, numeric(row[qtyIndex])) : 1;
+        if (!qty) return;
+        entries.push({ article, qty });
+      });
+      return entries;
+    }
+
+    function firstScanCell(row) {
+      return clean(row.find((cell) => {
+        const value = clean(cell);
+        return value && !/article|barcode|scan|total|qty|quantity/i.test(value);
+      }));
+    }
+
+    function rowsToInventory(rows) {
+      if (!rows || !rows.length) return [];
+      const headerMap = buildHeaderMap(rows[0]);
+      const hasFixedColumns = rows.some((row) => row.length > LEDGER_COLUMNS.mrp.index);
+      const items = [];
+
+      rows.forEach((row, index) => {
+        if (!row || !row.length) return;
+        const fromHeader = !hasFixedColumns && Object.keys(headerMap).length;
+        const value = (key) => {
+          const colIndex = fromHeader ? headerMap[key] : LEDGER_COLUMNS[key].index;
+          return colIndex >= 0 ? clean(row[colIndex]) : "";
+        };
+        const article = value("article");
+        const closingStock = numeric(value("closingStock"));
+        if (index === 0 && looksLikeHeader(article, value("description"))) return;
+        if (!article || /total/i.test(article)) return;
+        if (!Number.isFinite(closingStock)) return;
+        items.push({
+          article,
+          description: value("description"),
+          colour: value("colour"),
+          year: value("year"),
+          group: value("group"),
+          size: value("size"),
+          closingStock,
+          mrp: numeric(value("mrp"))
+        });
+      });
+
+      return normaliseItems(items);
+    }
+
+    function buildHeaderMap(headerRow) {
+      const aliases = {
+        article: ["article", "articleno", "articlecode", "artcode", "art_code", "sku"],
+        description: ["description", "product", "itemname", "desc"],
+        colour: ["colour", "color", "colors", "shade"],
+        year: ["year", "artyr", "season"],
+        group: ["group", "group1", "department", "dept"],
+        size: ["size"],
+        closingStock: ["closingstock", "closing_stock", "stock", "qty", "quantity", "closing"],
+        mrp: ["mrp", "mrptotal", "price"]
+      };
+      const cleanHeaders = headerRow.map((cell) => clean(cell).toLowerCase().replace(/[^a-z0-9_]/g, ""));
+      const map = {};
+      Object.entries(aliases).forEach(([key, names]) => {
+        map[key] = cleanHeaders.findIndex((header) => names.includes(header));
+      });
+      return map;
+    }
+
+    function looksLikeHeader(article, description) {
+      return /article|art_?code/i.test(article) || /description/i.test(description);
+    }
+
+    function replaceInventory(items, ledgerName) {
+      const storeId = state.currentStoreId || DEFAULT_STORE_ID;
+      const inventory = normaliseItems(items);
+      state.inventoryByStore[storeId] = inventory;
+      state.inventory = inventory;
+      state.audits = state.audits.filter((audit) => !storeRecordMatches(audit, storeId));
+      state.ledgerName = ledgerName;
+      state.ledgerDate = new Date().toISOString();
+      state.ledgerByStore[storeId] = { name: ledgerName, date: state.ledgerDate };
+      saveState();
+      renderAll();
+      switchTab("stock");
+      showToast(`${formatNumber(state.inventory.length)} stock items imported for ${storeLabel(storeId)}`);
+    }
+
+    function resetStock() {
+      const storeId = state.currentStoreId || DEFAULT_STORE_ID;
+      state.inventoryByStore[storeId] = [];
+      state.inventory = [];
+      state.audits = state.audits.filter((audit) => !storeRecordMatches(audit, storeId));
+      state.ledgerName = "No ledger";
+      state.ledgerDate = "";
+      state.ledgerByStore[storeId] = { name: "No ledger", date: "" };
+      saveState();
+      renderAll();
+      showToast(`Stock reset for ${storeLabel(storeId)}`);
+    }
+
+    function normaliseItems(items) {
+      const map = new Map();
+      items.forEach((item) => {
+        const cleaned = {
+          article: clean(item.article),
+          description: clean(item.description),
+          colour: clean(item.colour || item.color),
+          year: clean(item.year),
+          group: clean(item.group || item.department),
+          size: clean(item.size),
+          closingStock: numeric(item.closingStock),
+          mrp: numeric(item.mrp)
+        };
+        const split = splitArticleNumber(cleaned.article);
+        cleaned.baseArticle = clean(item.baseArticle) || split.baseArticle;
+        cleaned.shadeCode = clean(item.shadeCode) || split.shadeCode;
+        cleaned.articleSize = clean(item.articleSize) || split.articleSize;
+        if (!cleaned.article) return;
+        const key = [cleaned.article, cleaned.description, cleaned.colour, cleaned.year, cleaned.group, cleaned.size, cleaned.mrp].join("|").toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, cleaned);
+          return;
+        }
+        map.get(key).closingStock += cleaned.closingStock;
+      });
+      return Array.from(map.values()).sort((a, b) => a.article.localeCompare(b.article, undefined, { numeric: true, sensitivity: "base" }));
+    }
+
+    function splitArticleNumber(article) {
+      const parts = clean(article).split("-").map(clean).filter(Boolean);
+      if (parts.length >= 3) {
+        return {
+          baseArticle: parts.slice(0, -2).join("-"),
+          shadeCode: parts[parts.length - 2],
+          articleSize: parts[parts.length - 1]
+        };
+      }
+      return { baseArticle: clean(article), shadeCode: "", articleSize: "" };
+    }
+
+    function saveAudit(event) {
+      event.preventDefault();
+      const staff = selectedAuditStaff();
+      if (!staff) {
+        showToast("Employee login required for audit");
+        return;
+      }
+      const scannedArticles = Object.keys(scanCounts);
+      let reportItems = [];
+      let skipped = 0;
+      if (scannedArticles.length) {
+        const audits = scannedArticles.map((article) => buildAudit(article, scanCounts[article], staff));
+        reportItems = audits.filter((audit) => audit && !audit.error);
+        skipped = audits.length - reportItems.length;
+      } else {
+        const article = clean(els.auditArticle.value);
+        if (!article || clean(els.auditQty.value) === "") {
+          showToast("Scan article or enter manual qty");
+          return;
+        }
+        const item = findArticle(article);
+        const audit = item ? buildAudit(item.article, numeric(els.auditQty.value), staff) : null;
+        if (!audit) {
+          showToast("Article not found");
+          return;
+        }
+        if (audit.error) {
+          showToast(audit.error);
+          return;
+        }
+        reportItems = [audit];
+      }
+
+      if (!reportItems.length) {
+        showToast("No allowed scan to submit");
+        return;
+      }
+      const keepFullStore = els.auditFullStore.checked;
+      const report = buildAuditReport(reportItems, staff);
+      state.audits.unshift(report);
+      clearScanBasket(false);
+      els.auditForm.reset();
+      els.auditFullStore.checked = keepFullStore && canUseFullStoreAudit(staff);
+      saveState();
+      renderAll();
+      showToast(`Audit report submitted: ${formatNumber(reportItems.length)} articles${skipped ? `, ${formatNumber(skipped)} skipped` : ""}`);
+    }
+
+    function buildAudit(article, countedQty, staff) {
+      const matches = state.inventory.filter((item) => item.article.toLowerCase() === article.toLowerCase());
+      if (!matches.length) return null;
+      if (!matches.some((item) => canStaffScanItem(item, staff))) {
+        return { error: "Staff cannot scan this department" };
+      }
+      const ledgerQty = matches.reduce((sum, item) => sum + numeric(item.closingStock), 0);
+      const variance = countedQty - ledgerQty;
+      return {
+        id: uid(),
+        article: matches[0].article,
+        description: matches[0].description,
+        group: matches[0].group,
+        storeId: state.currentStoreId,
+        storeName: storeLabel(state.currentStoreId),
+        ledgerQty,
+        countedQty,
+        variance,
+        status: auditStatus(variance),
+        staffName: staff?.name || "Unassigned",
+        staffDepartment: staff ? staffDepartmentLabel(staff) : "",
+        countedAt: new Date().toISOString()
+      };
+    }
+
+    function buildAuditReport(items, staff) {
+      const id = uid();
+      const now = new Date().toISOString();
+      const ledgerQty = items.reduce((sum, item) => sum + numeric(item.ledgerQty), 0);
+      const countedQty = items.reduce((sum, item) => sum + numeric(item.countedQty), 0);
+      const variance = countedQty - ledgerQty;
+      const groups = unique(items.map((item) => item.group)).filter(Boolean);
+      const scope = fullStoreAuditActive(staff) ? "Full Store" : "Department";
+      const title = scope === "Full Store" ? "Full Store Audit Report" : `${staffDepartmentLabel(staff)} Audit Report`;
+      return {
+        id,
+        type: "auditReport",
+        article: title,
+        description: `${formatNumber(items.length)} article lines`,
+        group: groups.length === 1 ? groups[0] : scope,
+        groups,
+        storeId: state.currentStoreId,
+        storeName: storeLabel(state.currentStoreId),
+        ledgerQty,
+        countedQty,
+        variance,
+        status: auditStatus(variance),
+        staffName: staff?.name || "Unassigned",
+        staffDepartment: staff ? staffDepartmentLabel(staff) : "",
+        scope,
+        scopeDepartments: auditScopeGroups(staff),
+        diffArticleCount: items.filter((item) => numeric(item.variance) !== 0).length,
+        countedAt: now,
+        submittedAt: now,
+        submittedToAdmin: true,
+        items: items.map((item) => ({ ...item, id: item.id || uid(), reportId: id }))
+      };
+    }
+
+    function auditStatus(variance) {
+      return variance < 0 ? "short" : variance > 0 ? "excess" : "match";
+    }
+
+    function addScanFromInput() {
+      const query = clean(els.auditArticle.value);
+      const item = findArticle(query);
+      if (!item) {
+        showToast("Scanned article not found");
+        return;
+      }
+      const staff = selectedAuditStaff();
+      if (!canStaffScanItem(item, staff)) {
+        showToast("Staff cannot scan this department");
+        return;
+      }
+      scanCounts[item.article] = (scanCounts[item.article] || 0) + 1;
+      els.auditArticle.value = "";
+      renderScanBasket();
+      showToast(`${item.article} scanned`);
+    }
+
+    function findArticle(query) {
+      const value = clean(query).toLowerCase();
+      if (!value) return null;
+      return state.inventory.find((item) => item.article.toLowerCase() === value)
+        || uniqueArticleMatch(value)
+        || state.inventory.find((item) => item.article.toLowerCase().includes(value));
+    }
+
+    function uniqueArticleMatch(value) {
+      const matches = state.inventory.filter((item) => clean(item.baseArticle).toLowerCase() === value);
+      return matches.length === 1 ? matches[0] : null;
+    }
+
+    function selectedAuditStaff() {
+      return state.staff.find((person) => person.id === els.auditStaff.value) || currentUser();
+    }
+
+    function canUseFullStoreAudit(staff = selectedAuditStaff()) {
+      return !!staff && hasRight("canFullStoreAudit", staff);
+    }
+
+    function fullStoreAuditActive(staff = selectedAuditStaff()) {
+      return canUseFullStoreAudit(staff) && !!els.auditFullStore.checked;
+    }
+
+    function auditScopeGroups(staff = selectedAuditStaff()) {
+      if (!staff) return [];
+      const allGroups = unique(state.inventory.map((item) => item.group)).filter(Boolean);
+      const departments = staffDepartments(staff).filter(Boolean);
+      const departmentKeys = departments.map((department) => department.toLowerCase());
+      if (fullStoreAuditActive(staff) || departmentKeys.includes("all") || isAdmin(staff)) return allGroups;
+      return departments;
+    }
+
+    function auditScopeItems(staff = selectedAuditStaff()) {
+      const groups = auditScopeGroups(staff).map((group) => group.toLowerCase());
+      if (!groups.length) return [];
+      const allGroups = unique(state.inventory.map((item) => item.group)).filter(Boolean);
+      const fullScope = allGroups.length && groups.length === allGroups.length && allGroups.every((group) => groups.includes(group.toLowerCase()));
+      return fullScope ? state.inventory : state.inventory.filter((item) => groups.includes(clean(item.group).toLowerCase()));
+    }
+
+    function canStaffScanItem(item, staff) {
+      if (!staff) return false;
+      const departments = staffDepartments(staff).map((department) => department.toLowerCase());
+      const stores = staffStoreIds(staff);
+      const storeAllowed = !stores.length || stores.includes("ALL") || stores.includes(state.currentStoreId);
+      if (!storeAllowed) return false;
+      if (fullStoreAuditActive(staff)) return true;
+      return !departments.length || departments.includes("all") || departments.includes(clean(item.group).toLowerCase());
+    }
+
+    function clearScanBasket(showMessage = true) {
+      Object.keys(scanCounts).forEach((article) => delete scanCounts[article]);
+      renderScanBasket();
+      if (showMessage) showToast("Scan list cleared");
+    }
+
+    function pruneScanBasketToScope() {
+      const staff = selectedAuditStaff();
+      Object.keys(scanCounts).forEach((article) => {
+        const item = findArticle(article);
+        if (!item || !canStaffScanItem(item, staff)) delete scanCounts[article];
+      });
+    }
+
+    function renderScanBasket() {
+      if (!els.scanBasket) return;
+      syncFullStoreAuditControl();
+      pruneScanBasketToScope();
+      renderAuditScopeSummary();
+      const articles = Object.keys(scanCounts);
+      if (!articles.length) {
+        els.scanBasket.innerHTML = `<div class="summary-row"><strong>No scanned articles</strong><span>Scan article number to add count automatically.</span></div>`;
+        return;
+      }
+      els.scanBasket.innerHTML = articles.map((article) => {
+        const matches = state.inventory.filter((item) => item.article.toLowerCase() === article.toLowerCase());
+        const ledgerQty = matches.reduce((sum, item) => sum + numeric(item.closingStock), 0);
+        return `
+          <div class="summary-row">
+            <strong>${escapeHtml(article)}</strong>
+            <span>Scanned ${formatNumber(scanCounts[article])} | Ledger ${formatNumber(ledgerQty)}</span>
+            <div class="top-actions" style="margin-top:7px;justify-content:flex-start">
+              <button class="button small" type="button" data-scan-minus="${escapeHtml(article)}">Delete 1</button>
+              <button class="button small danger" type="button" data-scan-delete="${escapeHtml(article)}">Delete All</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+      els.scanBasket.querySelectorAll("[data-scan-minus]").forEach((button) => {
+        button.addEventListener("click", () => removeScan(button.dataset.scanMinus, 1));
+      });
+      els.scanBasket.querySelectorAll("[data-scan-delete]").forEach((button) => {
+        button.addEventListener("click", () => removeScan(button.dataset.scanDelete, Infinity));
+      });
+    }
+
+    function removeScan(article, qty) {
+      if (!scanCounts[article]) return;
+      if (qty === Infinity || scanCounts[article] <= qty) delete scanCounts[article];
+      else scanCounts[article] -= qty;
+      renderScanBasket();
+      showToast("Scan entry deleted");
+    }
+
+    function syncFullStoreAuditControl() {
+      const staff = selectedAuditStaff();
+      const allowed = canUseFullStoreAudit(staff);
+      els.auditFullStoreWrap.classList.toggle("hidden", !allowed);
+      if (!allowed) els.auditFullStore.checked = false;
+    }
+
+    function renderAuditScopeSummary() {
+      const staff = selectedAuditStaff();
+      const scopeItems = auditScopeItems(staff);
+      const ledgerQty = scopeItems.reduce((sum, item) => sum + numeric(item.closingStock), 0);
+      const countedQty = Object.values(scanCounts).reduce((sum, qty) => sum + numeric(qty), 0);
+      const diffQty = countedQty - ledgerQty;
+      const scannedArticles = Object.keys(scanCounts);
+      const diffArticles = scannedArticles.filter((article) => {
+        const matches = state.inventory.filter((item) => item.article.toLowerCase() === article.toLowerCase());
+        const articleLedger = matches.reduce((sum, item) => sum + numeric(item.closingStock), 0);
+        return numeric(scanCounts[article]) !== articleLedger;
+      }).length;
+      const groupTotals = auditScopeGroupTotals(scopeItems);
+      const scopeLabel = fullStoreAuditActive(staff) ? "Full store" : staffDepartmentLabel(staff || {});
+      els.auditScopeSummary.innerHTML = `
+        <div class="summary-row">
+          <strong>${escapeHtml(scopeLabel || "Department audit")}</strong>
+          <span>${fullStoreAuditActive(staff) ? "Admin approved full store scan" : "Assigned department scan"}</span>
+        </div>
+        <div class="variance-grid">
+          <div><span>Stock Qty</span><strong>${formatNumber(ledgerQty)}</strong></div>
+          <div><span>Scanned Qty</span><strong>${formatNumber(countedQty)}</strong></div>
+          <div><span>Diff Qty</span><strong>${signed(diffQty)}</strong></div>
+          <div><span>Diff Articles</span><strong>${formatNumber(diffArticles)}</strong></div>
+        </div>
+        <div class="scan-list">
+          ${groupTotals.length ? groupTotals.slice(0, 20).map((row) => `
+            <div class="summary-row">
+              <strong>${escapeHtml(row.group)}</strong>
+              <span>Stock ${formatNumber(row.ledgerQty)} | Scan ${formatNumber(row.countedQty)} | Diff ${signed(row.countedQty - row.ledgerQty)}</span>
+            </div>
+          `).join("") : `<div class="summary-row"><strong>No department stock</strong><span>Upload ledger or check employee department.</span></div>`}
+        </div>
+      `;
+    }
+
+    function auditScopeGroupTotals(scopeItems) {
+      const totals = new Map();
+      scopeItems.forEach((item) => {
+        const group = item.group || "N.A.";
+        if (!totals.has(group)) totals.set(group, { group, ledgerQty: 0, countedQty: 0 });
+        totals.get(group).ledgerQty += numeric(item.closingStock);
+      });
+      Object.entries(scanCounts).forEach(([article, qty]) => {
+        const item = findArticle(article);
+        const group = item?.group || "N.A.";
+        if (!totals.has(group)) totals.set(group, { group, ledgerQty: 0, countedQty: 0 });
+        totals.get(group).countedQty += numeric(qty);
+      });
+      return Array.from(totals.values()).sort((a, b) => a.group.localeCompare(b.group));
+    }
+
+    function renderAudit() {
+      const storeAudits = state.audits.filter((audit) => storeRecordMatches(audit));
+      const variance = storeAudits.reduce((sum, audit) => sum + auditSummary(audit).variance, 0);
+      els.auditStatusText.textContent = `${formatNumber(storeAudits.length)} reports, variance ${signed(variance)}`;
+      const department = els.auditDeptFilter.value || "all";
+      const visibleAudits = storeAudits.filter((audit) => auditMatchesGroup(audit, department));
+      if (!visibleAudits.length) {
+        els.auditList.innerHTML = `<div class="empty"><div><strong>No audit report</strong><span>Submit scanned audit report from the audit form.</span></div></div>`;
+        return;
+      }
+      els.auditList.innerHTML = visibleAudits.map((audit) => auditReportCard(audit)).join("");
+    }
+
+    function auditItems(audit) {
+      return Array.isArray(audit.items) && audit.items.length ? audit.items : [audit];
+    }
+
+    function auditSummary(audit) {
+      const items = auditItems(audit);
+      const ledgerQty = numeric(audit.ledgerQty) || items.reduce((sum, item) => sum + numeric(item.ledgerQty), 0);
+      const countedQty = numeric(audit.countedQty) || items.reduce((sum, item) => sum + numeric(item.countedQty), 0);
+      const variance = countedQty - ledgerQty;
+      return {
+        ledgerQty,
+        countedQty,
+        variance,
+        status: audit.status || auditStatus(variance),
+        itemCount: items.length,
+        diffArticleCount: numeric(audit.diffArticleCount) || items.filter((item) => numeric(item.variance) !== 0).length,
+        groups: unique(items.map((item) => item.group || audit.group)).filter(Boolean)
+      };
+    }
+
+    function auditMatchesGroup(audit, group) {
+      if (group === "all") return true;
+      return auditItems(audit).some((item) => item.group === group) || audit.group === group;
+    }
+
+    function auditReportCard(audit) {
+      const summary = auditSummary(audit);
+      const title = audit.type === "auditReport" ? audit.article : `${audit.article} Audit`;
+      const scope = audit.scope || audit.staffDepartment || audit.group || "Department";
+      const date = audit.submittedAt || audit.countedAt;
+      return `
+        <article class="audit-card">
+          <div class="row-main">
+            <div>
+              <strong>${escapeHtml(title)}</strong>
+              <small>${escapeHtml(audit.storeName || storeLabel(audit.storeId || DEFAULT_STORE_ID))} - ${escapeHtml(audit.staffName || "Unassigned")} - ${escapeHtml(scope)} - ${date ? new Date(date).toLocaleString() : ""}</small>
+            </div>
+            <span class="status ${escapeHtml(summary.status)}">${escapeHtml(summary.status)}</span>
+          </div>
+          <div class="variance-grid">
+            <div><span>Ledger</span><strong>${formatNumber(summary.ledgerQty)}</strong></div>
+            <div><span>Counted</span><strong>${formatNumber(summary.countedQty)}</strong></div>
+            <div><span>Variance</span><strong>${signed(summary.variance)}</strong></div>
+            <div><span>Diff Articles</span><strong>${formatNumber(summary.diffArticleCount)}</strong></div>
+          </div>
+          <details class="audit-details">
+            <summary>View details (${formatNumber(summary.itemCount)} articles)</summary>
+            <div class="audit-detail-list">${auditItems(audit).map((item) => auditDetailRow(item)).join("")}</div>
+          </details>
+        </article>
+      `;
+    }
+
+    function auditDetailRow(item) {
+      return `
+        <div class="summary-row">
+          <strong>${escapeHtml(item.article || "-")}</strong>
+          <span>${escapeHtml(item.group || "N.A.")} | Ledger ${formatNumber(item.ledgerQty)} | Counted ${formatNumber(item.countedQty)} | Diff ${signed(item.variance)}</span>
+        </div>
+      `;
+    }
+
+    function submitGlobalCount(event) {
+      event.preventDefault();
+      const user = currentUser();
+      const group = clean(els.globalCountGroup.value);
+      if (!group || group === "all") {
+        showToast("Select department for count");
+        return;
+      }
+      if (!hasRight("canGlobalCount") || !userDepartments(user).map((item) => item.toLowerCase()).includes(group.toLowerCase())) {
+        showToast("No count right for this department");
+        return;
+      }
+      const ledgerQty = ledgerQtyByGroup(group);
+      const countedQty = numeric(els.globalCountQty.value);
+      const report = {
+        id: uid(),
+        date: els.globalCountDate.value || new Date().toISOString().slice(0, 10),
+        group,
+        storeId: state.currentStoreId,
+        storeName: storeLabel(state.currentStoreId),
+        ledgerQty,
+        countedQty,
+        variance: countedQty - ledgerQty,
+        staffId: user.id,
+        staffName: user.name,
+        status: "Submitted",
+        note: clean(els.globalCountNote.value),
+        submittedAt: new Date().toISOString()
+      };
+      state.globalCounts.unshift(report);
+      els.globalCountForm.reset();
+      els.globalCountDate.value = new Date().toISOString().slice(0, 10);
+      saveState();
+      renderAll();
+      showToast("Global count submitted to admin");
+    }
+
+    function ledgerQtyByGroup(group) {
+      return state.inventory
+        .filter((item) => item.group === group)
+        .reduce((sum, item) => sum + numeric(item.closingStock), 0);
+    }
+
+    function renderGlobalCount() {
+      if (!els.globalCountList) return;
+      if (!els.globalCountDate.value) els.globalCountDate.value = new Date().toISOString().slice(0, 10);
+      const user = currentUser();
+      const storeReports = state.globalCounts.filter((report) => storeRecordMatches(report));
+      const reports = isAdmin(user)
+        ? storeReports
+        : storeReports.filter((report) => report.staffId === user?.id || userDepartments(user).includes(report.group));
+      els.globalCountStatus.textContent = `${formatNumber(reports.length)} reports`;
+      if (!reports.length) {
+        els.globalCountList.innerHTML = `<div class="empty"><div><strong>No count report</strong><span>Submit department-wise physical count.</span></div></div>`;
+        return;
+      }
+      els.globalCountList.innerHTML = reports.map((report) => `
+        <article class="count-card">
+          <div class="row-main">
+            <div>
+              <strong>${escapeHtml(report.group)}</strong>
+              <small>${escapeHtml(report.date)} - ${escapeHtml(report.storeName || storeLabel(report.storeId || DEFAULT_STORE_ID))} - ${escapeHtml(report.staffName)} - ${escapeHtml(report.status)}</small>
+            </div>
+            <span class="status ${report.status === "Approved" ? "match" : report.status === "Rejected" ? "short" : "excess"}">${escapeHtml(report.status)}</span>
+          </div>
+          <div class="variance-grid">
+            <div><span>Ledger</span><strong>${formatNumber(report.ledgerQty)}</strong></div>
+            <div><span>Physical</span><strong>${formatNumber(report.countedQty)}</strong></div>
+            <div><span>Variance</span><strong>${signed(report.variance)}</strong></div>
+          </div>
+          ${report.note ? `<div class="tag-row"><span class="tag">${escapeHtml(report.note)}</span></div>` : ""}
+        </article>
+      `).join("");
+    }
+
+    function renderAdmin() {
+      if (!els.adminStaffList || !els.adminCountList) return;
+      if (!hasRight("canAdmin")) {
+        els.adminStaffList.innerHTML = `<div class="empty"><div><strong>Admin only</strong><span>Login as admin to approve rights.</span></div></div>`;
+        els.adminCountList.innerHTML = "";
+        return;
+      }
+
+      els.adminStaffList.innerHTML = state.staff.filter((staff) => staff.active !== false).map((staff) => `
+        <article class="admin-card">
+          <div class="row-main">
+            <div>
+              <strong>${escapeHtml(staff.name)}</strong>
+              <small>${escapeHtml(staff.phone || staff.username || "-")} - ${escapeHtml(staffDepartmentLabel(staff))}</small>
+            </div>
+            <span class="status ${staff.approved === false ? "excess" : "match"}">${staff.approved === false ? "Pending" : "Approved"}</span>
+          </div>
+          <div class="checkbox-list">
+            <label class="check-item"><input type="checkbox" data-admin-approved="${escapeHtml(staff.id)}" ${staff.approved === false ? "" : "checked"}>Approve Login</label>
+            <label class="check-item"><input type="checkbox" data-admin-right="${escapeHtml(staff.id)}" data-right="canAudit" ${staff.rights?.canAudit ? "checked" : ""}>Audit</label>
+            <label class="check-item"><input type="checkbox" data-admin-right="${escapeHtml(staff.id)}" data-right="canGlobalCount" ${staff.rights?.canGlobalCount ? "checked" : ""}>Global Count</label>
+            <label class="check-item"><input type="checkbox" data-admin-right="${escapeHtml(staff.id)}" data-right="canUploadLedger" ${staff.rights?.canUploadLedger ? "checked" : ""}>Ledger Upload</label>
+            <label class="check-item"><input type="checkbox" data-admin-right="${escapeHtml(staff.id)}" data-right="canFullStoreAudit" ${staff.rights?.canFullStoreAudit ? "checked" : ""}>Full Store Audit</label>
+            <label class="check-item"><input type="checkbox" data-admin-right="${escapeHtml(staff.id)}" data-right="canManageStaff" ${staff.rights?.canManageStaff ? "checked" : ""}>Manage Staff</label>
+            <label class="check-item"><input type="checkbox" data-admin-right="${escapeHtml(staff.id)}" data-right="canAdmin" ${staff.rights?.canAdmin ? "checked" : ""}>Admin</label>
+          </div>
+        </article>
+      `).join("");
+
+      els.adminStaffList.querySelectorAll("[data-admin-approved]").forEach((input) => {
+        input.addEventListener("change", () => updateStaffApproval(input.dataset.adminApproved, input.checked));
+      });
+      els.adminStaffList.querySelectorAll("[data-admin-right]").forEach((input) => {
+        input.addEventListener("change", () => updateStaffRight(input.dataset.adminRight, input.dataset.right, input.checked));
+      });
+
+      const pendingReports = state.globalCounts;
+      els.adminCountList.innerHTML = pendingReports.length
+        ? pendingReports.map((report) => `
+          <article class="admin-card">
+            <div class="row-main">
+              <div>
+                <strong>${escapeHtml(report.group)}</strong>
+                <small>${escapeHtml(report.date)} - ${escapeHtml(report.staffName)} - ${escapeHtml(report.status)}</small>
+              </div>
+              <span class="status ${report.status === "Approved" ? "match" : report.status === "Rejected" ? "short" : "excess"}">${escapeHtml(report.status)}</span>
+            </div>
+            <div class="variance-grid">
+              <div><span>Ledger</span><strong>${formatNumber(report.ledgerQty)}</strong></div>
+              <div><span>Physical</span><strong>${formatNumber(report.countedQty)}</strong></div>
+              <div><span>Variance</span><strong>${signed(report.variance)}</strong></div>
+            </div>
+            <div class="top-actions" style="justify-content:flex-start">
+              <button class="button small" type="button" data-count-status="${escapeHtml(report.id)}" data-status="Approved">Approve</button>
+              <button class="button small danger" type="button" data-count-status="${escapeHtml(report.id)}" data-status="Rejected">Reject</button>
+            </div>
+          </article>
+        `).join("")
+        : `<div class="empty"><div><strong>No reports</strong><span>Global count submissions appear here.</span></div></div>`;
+
+      els.adminCountList.querySelectorAll("[data-count-status]").forEach((button) => {
+        button.addEventListener("click", () => updateCountStatus(button.dataset.countStatus, button.dataset.status));
+      });
+    }
+
+    function updateStaffApproval(id, approved) {
+      const staff = state.staff.find((person) => person.id === id);
+      if (!staff) return;
+      staff.approved = approved;
+      saveState();
+      renderAll();
+      showToast("Staff approval updated");
+    }
+
+    function updateStaffRight(id, right, value) {
+      const staff = state.staff.find((person) => person.id === id);
+      if (!staff) return;
+      staff.rights = { ...defaultRights(staff.role || "staff"), ...(staff.rights || {}), [right]: value };
+      if (right === "canAdmin") staff.role = value ? "admin" : "staff";
+      saveState();
+      renderAll();
+      showToast("Staff right updated");
+    }
+
+    function updateCountStatus(id, status) {
+      const report = state.globalCounts.find((item) => item.id === id);
+      if (!report) return;
+      report.status = status;
+      report.approvedBy = currentUser()?.name || "Admin";
+      report.approvedAt = new Date().toISOString();
+      saveState();
+      renderAll();
+      showToast(`Report ${status.toLowerCase()}`);
+    }
+
+    function saveStaff(event) {
+      event.preventDefault();
+      const departments = selectedStaffDepartments();
+      const role = clean(els.staffRole.value) || "staff";
+      const staff = {
+        id: uid(),
+        name: clean(els.staffName.value),
+        phone: clean(els.staffUsername.value),
+        username: clean(els.staffUsername.value),
+        password: clean(els.staffPin.value),
+        pin: clean(els.staffPin.value),
+        role,
+        departments: role === "admin" ? ["ALL"] : departments,
+        department: role === "admin" ? "ALL" : departments.join(", "),
+        storeIds: role === "admin" ? ["ALL"] : [state.currentStoreId || DEFAULT_STORE_ID],
+        storeId: role === "admin" ? "ALL" : state.currentStoreId || DEFAULT_STORE_ID,
+        approved: role === "admin",
+        active: true,
+        rights: defaultRights(role)
+      };
+      if (!staff.name || !staff.phone || !staff.password || (role !== "admin" && !departments.length)) {
+        showToast("Staff name, phone, password and department required");
+        return;
+      }
+      if (state.staff.some((person) => clean(person.phone || person.username).toLowerCase() === staff.phone.toLowerCase())) {
+        showToast("EMP Code already exists");
+        return;
+      }
+      state.staff.push(staff);
+      els.staffForm.reset();
+      clearDepartmentChecks();
+      saveState();
+      renderAll();
+      showToast("Staff added");
+    }
+
+    function renderStaff() {
+      const activeStaff = state.staff.filter((staff) => staff.active !== false);
+      els.staffStatusText.textContent = `${formatNumber(activeStaff.length)} staff`;
+      const departments = activeStaff.reduce((acc, staff) => {
+        staffDepartments(staff).forEach((department) => {
+          acc[department] = (acc[department] || 0) + 1;
+        });
+        return acc;
+      }, {});
+      const departmentRows = Object.entries(departments).sort((a, b) => a[0].localeCompare(b[0]));
+      els.departmentSummary.innerHTML = departmentRows.length
+        ? departmentRows.map(([department, count]) => `<div class="summary-row"><strong>${escapeHtml(department)}</strong><span>${formatNumber(count)} staff</span></div>`).join("")
+        : `<div class="empty"><div><strong>No department</strong><span>Add store staff department.</span></div></div>`;
+      els.staffList.innerHTML = activeStaff.map((staff) => `
+        <article class="staff-card">
+          <div class="row-main">
+            <div><strong>${escapeHtml(staff.name)}</strong><small>${escapeHtml(staff.phone || staff.username || "-")} - ${escapeHtml(staff.role || "staff")} - ${escapeHtml(staffDepartmentLabel(staff))} - ${staff.approved === false ? "Pending" : "Approved"}</small></div>
+            <button class="icon-button" type="button" data-remove-staff="${escapeHtml(staff.id)}" aria-label="Remove staff" data-tooltip="Remove staff"><span class="icon icon-trash"></span></button>
+          </div>
+        </article>
+      `).join("");
+      els.staffList.querySelectorAll("[data-remove-staff]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const staff = state.staff.find((person) => person.id === button.dataset.removeStaff);
+          if (staff) staff.active = false;
+          saveState();
+          renderAll();
+          showToast("Staff removed");
+        });
+      });
+    }
+
+    function renderDepartmentCheckboxes(groups) {
+      const departments = groups.length ? groups : ["General"];
+      els.deptCheckboxes.innerHTML = departments.map((department) => `
+        <label class="check-item">
+          <input type="checkbox" value="${escapeHtml(department)}">
+          <span>${escapeHtml(department)}</span>
+        </label>
+      `).join("");
+    }
+
+    function selectedStaffDepartments() {
+      return Array.from(els.deptCheckboxes.querySelectorAll("input:checked")).map((input) => clean(input.value)).filter(Boolean);
+    }
+
+    function clearDepartmentChecks() {
+      els.deptCheckboxes.querySelectorAll("input:checked").forEach((input) => {
+        input.checked = false;
+      });
+    }
+
+    function staffDepartments(staff) {
+      if (!staff) return [];
+      if (Array.isArray(staff.departments)) return staff.departments.map(clean).filter(Boolean);
+      return clean(staff.department).split(",").map(clean).filter(Boolean);
+    }
+
+    function staffDepartmentLabel(staff) {
+      const departments = staffDepartments(staff);
+      return departments.length ? departments.join(", ") : "No department";
+    }
+
+    async function handlePhotoFile(event) {
+      const file = event.target.files[0];
+      if (!file || !pendingPhotoArticle) return;
+      try {
+        const dataUrl = await resizePhoto(file);
+        await saveArticlePhoto(pendingPhotoArticle, dataUrl);
+        showToast("Photo saved");
+      } catch (error) {
+        showToast("Photo upload failed");
+      } finally {
+        event.target.value = "";
+        pendingPhotoArticle = "";
+      }
+    }
+
+    function switchTab(tab) {
+      if (!canAccessTab(tab)) {
+        showToast("No approval for this section");
+        tab = "stock";
+      }
+      document.querySelectorAll("[data-tab]").forEach((button) => button.classList.toggle("active", button.dataset.tab === tab));
+      document.querySelectorAll(".screen").forEach((screen) => screen.classList.remove("active"));
+      document.getElementById(`${tab}Screen`).classList.add("active");
+    }
+
+    function parseDelimited(text) {
+      const delimiter = detectDelimiter(text);
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let quote = false;
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        const next = text[i + 1];
+        if (char === '"' && quote && next === '"') {
+          cell += '"';
+          i += 1;
+        } else if (char === '"') {
+          quote = !quote;
+        } else if (!quote && char === delimiter) {
+          row.push(cell);
+          cell = "";
+        } else if (!quote && (char === "\n" || char === "\r")) {
+          if (char === "\r" && next === "\n") i += 1;
+          row.push(cell);
+          rows.push(row);
+          row = [];
+          cell = "";
+        } else {
+          cell += char;
+        }
+      }
+      row.push(cell);
+      if (row.some((value) => clean(value))) rows.push(row);
+      return rows;
+    }
+
+    function detectDelimiter(text) {
+      const line = text.split(/\r?\n/).find((item) => item.trim()) || "";
+      return [",", "\t", ";", "|"].map((delimiter) => ({ delimiter, count: line.split(delimiter).length })).sort((a, b) => b.count - a.count)[0].delimiter;
+    }
+
+    function parseXlsWorkbook(arrayBuffer) {
+      const bytes = new Uint8Array(arrayBuffer);
+      const ole = parseOle(bytes);
+      const stream = ole.stream("Workbook") || ole.stream("Book");
+      if (!stream) throw new Error("Workbook stream not found");
+      return parseBiffRows(stream);
+    }
+
+    function parseOle(bytes) {
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      const signature = "d0cf11e0a1b11ae1";
+      const actual = Array.from(bytes.slice(0, 8)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+      if (actual !== signature) throw new Error("Selected file is not an old Excel .xls workbook");
+      const sectorSize = 1 << view.getUint16(30, true);
+      const miniSectorSize = 1 << view.getUint16(32, true);
+      const firstDirSector = readSid(view, 48);
+      const miniCutoff = view.getUint32(56, true);
+      const firstMiniFatSector = readSid(view, 60);
+      const numMiniFatSectors = view.getUint32(64, true);
+      const firstDifatSector = readSid(view, 68);
+      const numDifatSectors = view.getUint32(72, true);
+      const difat = [];
+      for (let i = 0; i < 109; i += 1) {
+        const sid = readSid(view, 76 + i * 4);
+        if (sid >= 0) difat.push(sid);
+      }
+      let nextDifat = firstDifatSector;
+      for (let d = 0; d < numDifatSectors && nextDifat >= 0; d += 1) {
+        const offset = sectorOffset(nextDifat, sectorSize);
+        for (let i = 0; i < sectorSize / 4 - 1; i += 1) {
+          const sid = readSid(view, offset + i * 4);
+          if (sid >= 0) difat.push(sid);
+        }
+        nextDifat = readSid(view, offset + sectorSize - 4);
+      }
+      const fat = [];
+      difat.forEach((sid) => {
+        const offset = sectorOffset(sid, sectorSize);
+        for (let i = 0; i < sectorSize / 4; i += 1) fat.push(readSid(view, offset + i * 4));
+      });
+      const chain = (startSid) => {
+        const chunks = [];
+        let sid = startSid;
+        let guard = 0;
+        while (sid >= 0 && guard < fat.length + 4) {
+          const offset = sectorOffset(sid, sectorSize);
+          chunks.push(bytes.slice(offset, offset + sectorSize));
+          sid = fat[sid];
+          guard += 1;
+        }
+        return concatBytes(chunks);
+      };
+      const dirStream = chain(firstDirSector);
+      const dirs = [];
+      for (let offset = 0; offset + 128 <= dirStream.length; offset += 128) {
+        const entry = dirStream.slice(offset, offset + 128);
+        const nameLength = new DataView(entry.buffer, entry.byteOffset, entry.byteLength).getUint16(64, true);
+        if (!nameLength) continue;
+        const name = decodeUtf16(entry.slice(0, Math.max(0, nameLength - 2)));
+        const type = entry[66];
+        const startSid = readSid(new DataView(entry.buffer, entry.byteOffset, entry.byteLength), 116);
+        const size = new DataView(entry.buffer, entry.byteOffset, entry.byteLength).getUint32(120, true);
+        dirs.push({ name, type, startSid, size });
+      }
+      const root = dirs.find((dir) => dir.type === 5);
+      const miniFat = [];
+      if (numMiniFatSectors && firstMiniFatSector >= 0) {
+        const miniFatStream = chain(firstMiniFatSector);
+        for (let i = 0; i + 4 <= miniFatStream.length; i += 4) miniFat.push(readSid(new DataView(miniFatStream.buffer, miniFatStream.byteOffset, miniFatStream.byteLength), i));
+      }
+      const miniStream = root && root.startSid >= 0 ? chain(root.startSid) : new Uint8Array();
+      const miniChain = (startMiniSid) => {
+        const chunks = [];
+        let sid = startMiniSid;
+        let guard = 0;
+        while (sid >= 0 && guard < miniFat.length + 4) {
+          const offset = sid * miniSectorSize;
+          chunks.push(miniStream.slice(offset, offset + miniSectorSize));
+          sid = miniFat[sid];
+          guard += 1;
+        }
+        return concatBytes(chunks);
+      };
+      return {
+        stream(name) {
+          const dir = dirs.find((item) => item.name === name);
+          if (!dir) return null;
+          const data = dir.size < miniCutoff && dir.type === 2 ? miniChain(dir.startSid) : chain(dir.startSid);
+          return data.slice(0, dir.size);
+        }
+      };
+    }
+
+    function parseBiffRows(stream) {
+      const view = new DataView(stream.buffer, stream.byteOffset, stream.byteLength);
+      const sharedStrings = [];
+      const sheets = [];
+      let offset = 0;
+      while (offset + 4 <= stream.length) {
+        const type = view.getUint16(offset, true);
+        const length = view.getUint16(offset + 2, true);
+        const dataStart = offset + 4;
+        const dataEnd = dataStart + length;
+        if (type === 0x0085) sheets.push(parseBoundSheet(stream.slice(dataStart, dataEnd)));
+        if (type === 0x00fc) {
+          const segments = [stream.slice(dataStart, dataEnd)];
+          let next = dataEnd;
+          while (next + 4 <= stream.length && view.getUint16(next, true) === 0x003c) {
+            const contLength = view.getUint16(next + 2, true);
+            segments.push(stream.slice(next + 4, next + 4 + contLength));
+            next += 4 + contLength;
+          }
+          sharedStrings.splice(0, sharedStrings.length, ...parseSst(segments));
+        }
+        offset = dataEnd;
+        if (sheets.length && type === 0x0809 && offset > sheets[0].offset) break;
+      }
+      const sheetOffset = sheets[0]?.offset || 0;
+      const rows = [];
+      offset = sheetOffset;
+      let pendingFormula = null;
+      while (offset + 4 <= stream.length) {
+        const type = view.getUint16(offset, true);
+        const length = view.getUint16(offset + 2, true);
+        const dataStart = offset + 4;
+        const data = stream.slice(dataStart, dataStart + length);
+        if (type === 0x000a) break;
+        if (type === 0x00fd) {
+          const dv = dataView(data);
+          setCell(rows, dv.getUint16(0, true), dv.getUint16(2, true), sharedStrings[dv.getUint32(6, true)] || "");
+        } else if (type === 0x0203) {
+          const dv = dataView(data);
+          setCell(rows, dv.getUint16(0, true), dv.getUint16(2, true), dv.getFloat64(6, true));
+        } else if (type === 0x027e) {
+          const dv = dataView(data);
+          setCell(rows, dv.getUint16(0, true), dv.getUint16(2, true), decodeRk(dv.getUint32(6, true)));
+        } else if (type === 0x00bd) {
+          const dv = dataView(data);
+          const row = dv.getUint16(0, true);
+          const firstCol = dv.getUint16(2, true);
+          const lastCol = dv.getUint16(data.length - 2, true);
+          for (let col = firstCol; col <= lastCol; col += 1) {
+            const itemOffset = 4 + (col - firstCol) * 6;
+            setCell(rows, row, col, decodeRk(dv.getUint32(itemOffset + 2, true)));
+          }
+        } else if (type === 0x0204) {
+          const dv = dataView(data);
+          setCell(rows, dv.getUint16(0, true), dv.getUint16(2, true), readInlineString(data, 6));
+        } else if (type === 0x0205) {
+          const dv = dataView(data);
+          setCell(rows, dv.getUint16(0, true), dv.getUint16(2, true), dv.getUint8(6) ? "TRUE" : "FALSE");
+        } else if (type === 0x0006) {
+          const dv = dataView(data);
+          const row = dv.getUint16(0, true);
+          const col = dv.getUint16(2, true);
+          const marker = dv.getUint16(6, true);
+          if (marker === 0xffff) pendingFormula = { row, col };
+          else setCell(rows, row, col, dv.getFloat64(6, true));
+        } else if (type === 0x0207 && pendingFormula) {
+          setCell(rows, pendingFormula.row, pendingFormula.col, readInlineString(data, 0));
+          pendingFormula = null;
+        }
+        offset += 4 + length;
+      }
+      return rows;
+    }
+
+    function parseBoundSheet(data) {
+      const dv = dataView(data);
+      const offset = dv.getUint32(0, true);
+      const nameLen = dv.getUint8(6);
+      const flags = dv.getUint8(7);
+      const highByte = flags & 1;
+      let name = "";
+      let pos = 8;
+      for (let i = 0; i < nameLen; i += 1) {
+        name += String.fromCharCode(highByte ? dv.getUint16(pos + i * 2, true) : dv.getUint8(pos + i));
+      }
+      return { offset, name };
+    }
+
+    function parseSst(segments) {
+      const reader = new SegmentReader(segments);
+      reader.u32();
+      const uniqueCount = reader.u32();
+      const strings = [];
+      for (let i = 0; i < uniqueCount && !reader.done(); i += 1) {
+        strings.push(reader.string());
+      }
+      return strings;
+    }
+
+    class SegmentReader {
+      constructor(segments) {
+        this.segments = segments;
+        this.segment = 0;
+        this.pos = 0;
+      }
+      current() {
+        return this.segments[this.segment] || new Uint8Array();
+      }
+      done() {
+        return this.segment >= this.segments.length;
+      }
+      ensure() {
+        while (!this.done() && this.pos >= this.current().length) {
+          this.segment += 1;
+          this.pos = 0;
+        }
+      }
+      byte() {
+        this.ensure();
+        if (this.done()) return 0;
+        return this.current()[this.pos++];
+      }
+      u16() {
+        const a = this.byte();
+        const b = this.byte();
+        return a | (b << 8);
+      }
+      u32() {
+        return this.u16() | (this.u16() << 16);
+      }
+      string() {
+        const length = this.u16();
+        let flags = this.byte();
+        const rich = flags & 0x08 ? this.u16() : 0;
+        const ext = flags & 0x04 ? this.u32() : 0;
+        let highByte = flags & 1;
+        let text = "";
+        for (let i = 0; i < length; i += 1) {
+          if (this.pos >= this.current().length) {
+            this.segment += 1;
+            this.pos = 0;
+            if (this.done()) break;
+            flags = this.byte();
+            highByte = flags & 1;
+          }
+          if (highByte) {
+            const lo = this.byte();
+            const hi = this.byte();
+            text += String.fromCharCode(lo | (hi << 8));
+          } else {
+            text += String.fromCharCode(this.byte());
+          }
+        }
+        for (let i = 0; i < rich * 4; i += 1) this.byte();
+        for (let i = 0; i < ext; i += 1) this.byte();
+        return text;
+      }
+    }
+
+    function readInlineString(data, offset) {
+      const dv = dataView(data);
+      if (offset + 3 > data.length) return "";
+      const length = dv.getUint16(offset, true);
+      const flags = dv.getUint8(offset + 2);
+      let pos = offset + 3;
+      if (flags & 0x08) pos += 2;
+      if (flags & 0x04) pos += 4;
+      let text = "";
+      for (let i = 0; i < length && pos < data.length; i += 1) {
+        if (flags & 1) {
+          text += String.fromCharCode(dv.getUint16(pos, true));
+          pos += 2;
+        } else {
+          text += String.fromCharCode(dv.getUint8(pos));
+          pos += 1;
+        }
+      }
+      return text;
+    }
+
+    function decodeRk(rk) {
+      const divided = rk & 1;
+      const isInteger = rk & 2;
+      let value;
+      if (isInteger) {
+        value = rk >> 2;
+      } else {
+        const buffer = new ArrayBuffer(8);
+        const view = new DataView(buffer);
+        view.setUint32(4, rk & 0xfffffffc, true);
+        value = view.getFloat64(0, true);
+      }
+      return divided ? value / 100 : value;
+    }
+
+    function setCell(rows, row, col, value) {
+      if (!rows[row]) rows[row] = [];
+      rows[row][col] = value;
+    }
+
+    function readSid(view, offset) {
+      const value = view.getUint32(offset, true);
+      return value >= 0xfffffffa ? -1 : value;
+    }
+
+    function sectorOffset(sid, sectorSize) {
+      return (sid + 1) * sectorSize;
+    }
+
+    function concatBytes(chunks) {
+      const length = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const output = new Uint8Array(length);
+      let offset = 0;
+      chunks.forEach((chunk) => {
+        output.set(chunk, offset);
+        offset += chunk.length;
+      });
+      return output;
+    }
+
+    function dataView(bytes) {
+      return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    }
+
+    function decodeUtf16(bytes) {
+      let text = "";
+      const view = dataView(bytes);
+      for (let i = 0; i + 1 < bytes.length; i += 2) text += String.fromCharCode(view.getUint16(i, true));
+      return text;
+    }
+
+    function openPhotoDb() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open("simple-stock-ledger-photos", 1);
+        request.onupgradeneeded = () => request.result.createObjectStore("photos");
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function loadAllPhotos() {
+      try {
+        const db = await openPhotoDb();
+        const tx = db.transaction("photos", "readonly");
+        const store = tx.objectStore("photos");
+        const keysRequest = store.getAllKeys();
+        const valuesRequest = store.getAll();
+        await Promise.all([idbRequest(keysRequest), idbRequest(valuesRequest)]);
+        const keys = keysRequest.result || [];
+        const values = valuesRequest.result || [];
+        keys.forEach((key, index) => {
+          photoCache[key] = values[index];
+        });
+        db.close();
+      } catch (error) {
+        console.warn("Photo store unavailable", error);
+      }
+    }
+
+    async function saveArticlePhoto(article, dataUrl) {
+      const db = await openPhotoDb();
+      const tx = db.transaction("photos", "readwrite");
+      tx.objectStore("photos").put(dataUrl, article);
+      await idbTransaction(tx);
+      db.close();
+      photoCache[article] = dataUrl;
+      renderStock();
+    }
+
+    async function deleteArticlePhoto(article) {
+      const db = await openPhotoDb();
+      const tx = db.transaction("photos", "readwrite");
+      tx.objectStore("photos").delete(article);
+      await idbTransaction(tx);
+      db.close();
+      delete photoCache[article];
+      renderStock();
+    }
+
+    function idbRequest(request) {
+      return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function idbTransaction(tx) {
+      return new Promise((resolve, reject) => {
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    }
+
+    function resizePhoto(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = () => {
+          const image = new Image();
+          image.onerror = reject;
+          image.onload = () => {
+            const maxSide = 900;
+            const scale = Math.min(1, maxSide / image.width, maxSide / image.height);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(image.width * scale));
+            canvas.height = Math.max(1, Math.round(image.height * scale));
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", .82));
+          };
+          image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function exportStockCsv() {
+      const rows = [["Store", "Full Article No", "Article", "Shade", "Description", "Colour", "Year", "Group", "Size", "Closing Stock", "MRP"]]
+        .concat(state.inventory.map((item) => [storeLabel(state.currentStoreId), item.article, item.baseArticle, item.shadeCode, item.description, item.colour, item.year, item.group, item.size, item.closingStock, item.mrp]));
+      downloadCsv("stock-ledger-selected-columns.csv", rows);
+    }
+
+    function exportAuditCsv() {
+      const rows = [["Store", "Report", "Scope", "Article", "Description", "Group", "Ledger Qty", "Counted Qty", "Variance", "Status", "Staff", "Staff Department", "Counted At"]]
+        .concat(state.audits.filter((audit) => storeRecordMatches(audit)).flatMap((audit) => {
+          const summary = auditSummary(audit);
+          return auditItems(audit).map((item) => [audit.storeName || storeLabel(audit.storeId || DEFAULT_STORE_ID), audit.article || "Audit Report", audit.scope || audit.staffDepartment || audit.group || "", item.article, item.description, item.group, item.ledgerQty, item.countedQty, item.variance, item.status || summary.status, audit.staffName || item.staffName, audit.staffDepartment || item.staffDepartment || "", audit.submittedAt || item.countedAt]);
+        }));
+      downloadCsv("stock-audit.csv", rows);
+    }
+
+    function downloadCsv(filename, rows) {
+      const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast(`${filename} downloaded`);
+    }
+
+    function csvCell(value) {
+      const text = String(value ?? "");
+      return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    }
+
+    function clean(value) {
+      return String(value ?? "").trim();
+    }
+
+    function codeKey(value) {
+      return clean(value).toLowerCase().replace(/\s+/g, "");
+    }
+
+    function phoneKey(value) {
+      const digits = String(value ?? "").replace(/\D/g, "");
+      if (digits) return digits.length > 10 ? digits.slice(-10) : digits;
+      return clean(value).toLowerCase();
+    }
+
+    function numeric(value) {
+      if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+      const parsed = Number(String(value ?? "").replace(/,/g, "").trim());
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function unique(values) {
+      return Array.from(new Set(values.map(clean).filter(Boolean))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(numeric(value));
+    }
+
+    function signed(value) {
+      const qty = numeric(value);
+      return qty > 0 ? `+${formatNumber(qty)}` : formatNumber(qty);
+    }
+
+    function uid() {
+      return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function colourToCss(value) {
+      const name = clean(value).toLowerCase();
+      const palette = {
+        black: "#111111",
+        brown: "#7c4a2d",
+        "coffee brown": "#5a3b2e",
+        teal: "#147a76",
+        peach: "#efb08f",
+        white: "#f5f5f5",
+        navy: "#1b2a4a",
+        blue: "#2259b8",
+        red: "#b42318",
+        green: "#147a3f",
+        grey: "#8a8a8a",
+        gray: "#8a8a8a"
+      };
+      if (palette[name]) return palette[name];
+      let hash = 0;
+      for (let i = 0; i < name.length; i += 1) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      return `hsl(${Math.abs(hash) % 360} 32% 52%)`;
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => els.toast.classList.remove("show"), 2200);
+    }
+
+    window.InventoryAppTest = { parseXlsWorkbook, rowsToInventory, rowsToScanEntries, splitArticleNumber, LEDGER_COLUMNS };
+  </script>
+</body>
+</html>

@@ -1,0 +1,2680 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventory Admin</title>
+  <style>
+    :root {
+      --ink: #111111;
+      --muted: #6f6f6f;
+      --line: #dddddd;
+      --soft: #f6f6f6;
+      --paper: #ffffff;
+      --good: #147a3f;
+      --bad: #b42318;
+      --warn: #9a6700;
+      --radius: 6px;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .shell {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      line-height: .92;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-top: 8px;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .button {
+      min-height: 40px;
+      border-radius: var(--radius);
+      border: 1px solid var(--ink);
+      background: white;
+      color: var(--ink);
+      padding: 0 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .button.primary,
+    .button:hover {
+      background: var(--ink);
+      color: white;
+    }
+
+    .button.danger {
+      border-color: var(--bad);
+      color: var(--bad);
+    }
+
+    .button.danger:hover {
+      background: var(--bad);
+      color: white;
+    }
+
+    .button.small {
+      min-height: 32px;
+      padding: 0 10px;
+      font-size: 11px;
+    }
+
+    .top-actions,
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .store-select {
+      min-width: 210px;
+      min-height: 40px;
+    }
+
+    .login,
+    .sessionbar,
+    .panel,
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+    }
+
+    .login,
+    .sessionbar {
+      margin-top: 14px;
+      padding: 13px;
+      background: var(--soft);
+    }
+
+    .sessionbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      min-height: 86px;
+      display: grid;
+      align-content: space-between;
+    }
+
+    .metric span {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .metric strong {
+      font-size: clamp(24px, 5vw, 34px);
+      font-weight: 500;
+      line-height: 1;
+      margin-top: 10px;
+    }
+
+    .tabs {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      padding: 8px 0;
+      background: rgba(255, 255, 255, .96);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+    }
+
+    .tabs button {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--muted);
+      border-radius: var(--radius);
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .tabs button.active {
+      background: var(--ink);
+      color: white;
+      border-color: var(--ink);
+    }
+
+    .screen {
+      display: none;
+      padding-top: 14px;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+      padding: 13px;
+    }
+
+    .panel-title h2,
+    .panel-title h3 {
+      font-size: 16px;
+      line-height: 1.2;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .panel-title p {
+      color: var(--muted);
+      margin-top: 4px;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .panel-body {
+      padding: 13px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) minmax(160px, .8fr) minmax(140px, .7fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 9px 10px;
+      background: white;
+      color: var(--ink);
+      outline: 0;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--ink);
+      box-shadow: 0 0 0 3px rgba(17, 17, 17, .08);
+    }
+
+    .two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .card {
+      padding: 10px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .row-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .row-main strong,
+    .card strong {
+      overflow-wrap: anywhere;
+    }
+
+    .row-main small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .tag,
+    .status {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+
+    .status.match {
+      border-color: rgba(20, 122, 63, .28);
+      color: var(--good);
+    }
+
+    .status.short {
+      border-color: rgba(180, 35, 24, .28);
+      color: var(--bad);
+    }
+
+    .status.excess {
+      border-color: rgba(154, 103, 0, .32);
+      color: var(--warn);
+    }
+
+    .rights {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .check {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .check input {
+      width: 18px;
+      min-height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .department-checks {
+      max-height: 260px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      background: white;
+    }
+
+    .department-checks .empty-note {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      padding: 8px;
+    }
+
+    .variance {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .audit-variance {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .audit-details {
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+    }
+
+    .audit-details summary {
+      cursor: pointer;
+      font-weight: 900;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .audit-detail-list {
+      display: grid;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .variance div {
+      background: var(--soft);
+      border-radius: var(--radius);
+      padding: 8px;
+    }
+
+    .variance span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 900;
+    }
+
+    .variance strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .empty {
+      min-height: 180px;
+      border: 1px dashed #bdbdbd;
+      border-radius: var(--radius);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 24px;
+      font-size: 13px;
+    }
+
+    .empty strong {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 50;
+      left: 50%;
+      bottom: 18px;
+      transform: translate(-50%, 110%);
+      opacity: 0;
+      background: #111;
+      color: white;
+      border-radius: var(--radius);
+      padding: 10px 13px;
+      max-width: min(440px, calc(100vw - 28px));
+      font-size: 13px;
+      text-align: center;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 860px) {
+      .shell {
+        padding: 12px;
+      }
+
+      .topbar,
+      .two-cols {
+        grid-template-columns: 1fr;
+      }
+
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .filters {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .tabs {
+        grid-template-columns: repeat(7, minmax(78px, 1fr));
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      .tabs::-webkit-scrollbar {
+        display: none;
+      }
+
+      .rights,
+      .department-checks,
+      .variance,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div>
+        <h1>Admin App</h1>
+        <p class="subtitle" id="dataStatus">Inventory control panel</p>
+      </div>
+      <div class="top-actions">
+        <select class="store-select hidden" id="adminStoreFilter" aria-label="Store filter"></select>
+        <a class="button" href="inventory_management_system.html">Employee App</a>
+        <button class="button" id="refreshBtn" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <section class="login" id="loginPanel">
+      <div class="panel-title">
+        <h2>Admin Login</h2>
+        <p>Default admin login: admin / admin</p>
+      </div>
+      <div class="filters" style="margin-top:12px">
+        <div class="field">
+          <label for="loginUser">EMP Code</label>
+          <input id="loginUser" autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="loginPin">Password</label>
+          <input id="loginPin" type="password" autocomplete="current-password">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="button primary" id="loginBtn" type="button">Login</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="sessionbar hidden" id="sessionBar">
+      <div>
+        <strong id="sessionName">Admin</strong>
+        <span class="tag" id="sessionDept">ALL</span>
+      </div>
+      <button class="button small" id="adminPasswordBtn" type="button">Password</button>
+      <button class="button small" id="logoutBtn" type="button">Logout</button>
+    </section>
+
+    <section class="panel hidden" id="adminPasswordPanel" style="margin-top:14px">
+      <div class="panel-head">
+        <div class="panel-title">
+          <h2>Change Password</h2>
+          <p>Update current admin password</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <form class="filters" id="adminPasswordForm">
+          <div class="field">
+            <label for="adminOldPassword">Current Password</label>
+            <input id="adminOldPassword" type="password" autocomplete="current-password">
+          </div>
+          <div class="field">
+            <label for="adminNewPassword">New Password</label>
+            <input id="adminNewPassword" type="password" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button class="button primary" type="submit">Update Password</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="grid hidden" id="metrics">
+      <div class="metric"><span>Closing Stock</span><strong id="metricStock">0</strong></div>
+      <div class="metric"><span>Articles</span><strong id="metricArticles">0</strong></div>
+      <div class="metric"><span>Groups</span><strong id="metricGroups">0</strong></div>
+      <div class="metric"><span>Pending Reports</span><strong id="metricPending">0</strong></div>
+    </section>
+
+    <nav class="tabs hidden" id="tabs" aria-label="Admin sections">
+      <button class="active" data-tab="summary" type="button">Summary</button>
+      <button data-tab="stores" type="button">Stores</button>
+      <button data-tab="staff" type="button">Staff</button>
+      <button data-tab="counts" type="button">Counts</button>
+      <button data-tab="audit" type="button">Audit</button>
+      <button data-tab="messages" type="button">Messages</button>
+      <button data-tab="backup" type="button">Backup</button>
+    </nav>
+
+    <main class="hidden" id="main">
+      <section class="screen active" id="summaryScreen">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Group Wise Quantity</h2>
+              <p>Total closing stock by group</p>
+            </div>
+            <button class="button small" id="exportSummaryBtn" type="button">Export</button>
+          </div>
+          <div class="panel-body">
+            <div class="filters">
+              <div class="field">
+                <label for="summarySearch">Search Group</label>
+                <input id="summarySearch" type="search" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="summaryYear">Year</label>
+                <select id="summaryYear"></select>
+              </div>
+              <div class="field">
+                <label for="summarySort">Sort</label>
+                <select id="summarySort">
+                  <option value="qty">Qty high</option>
+                  <option value="group">Group</option>
+                  <option value="articles">Articles</option>
+                </select>
+              </div>
+            </div>
+            <div class="list" id="summaryList"></div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:12px">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Admin Ledger Upload</h2>
+              <p id="adminLedgerStatus">Upload stock ledger for selected store</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <form class="filters" id="ledgerForm">
+              <div class="field">
+                <label for="ledgerStore">Store</label>
+                <select id="ledgerStore"></select>
+              </div>
+              <div class="field">
+                <label for="adminLedgerFile">Stock Ledger File</label>
+                <input id="adminLedgerFile" type="file" accept=".xls,.csv,.tsv,.txt">
+              </div>
+              <div class="field">
+                <label>&nbsp;</label>
+                <button class="button danger" id="resetStoreStockBtn" type="button">Reset Store Stock</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="storesScreen">
+        <div class="two-cols">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Create Store</h2>
+                <p>Store name, place and details</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <form class="field" id="storeForm">
+                <div class="field">
+                  <label for="storeName">Store Name</label>
+                  <input id="storeName" autocomplete="off" required>
+                </div>
+                <div class="field">
+                  <label for="storePlace">Place</label>
+                  <input id="storePlace" autocomplete="off" required>
+                </div>
+                <div class="field">
+                  <label for="storeDetails">Store Details</label>
+                  <textarea id="storeDetails" rows="3" autocomplete="off"></textarea>
+                </div>
+                <button class="button primary" type="submit">Create Store</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Stores</h2>
+                <p id="storeStatus">No stores</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="list" id="storeList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="staffScreen">
+        <div class="two-cols">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2 id="staffFormTitle">Create Employee</h2>
+                <p>EMP Code and password for employee login</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <form class="field" id="staffForm">
+                <div class="field">
+                  <label for="staffName">Employee Name</label>
+                  <input id="staffName" autocomplete="off" required>
+                </div>
+                <div class="field">
+                  <label for="staffPhone">EMP Code</label>
+                  <input id="staffPhone" autocomplete="off" required>
+                </div>
+                <div class="field">
+                  <label for="staffPassword">Password</label>
+                  <input id="staffPassword" autocomplete="new-password" required>
+                </div>
+                <div class="field">
+                  <label for="staffRole">Role</label>
+                  <select id="staffRole">
+                    <option value="staff">Employee</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="staffStore">Store</label>
+                  <select id="staffStore"></select>
+                </div>
+                <div class="field">
+                  <label for="staffDepartments">Department / Group</label>
+                  <div class="department-checks" id="staffDepartments" role="group" aria-label="Department / Group"></div>
+                </div>
+                <div class="two-cols">
+                  <button class="button primary" id="staffSubmitBtn" type="submit">Create Employee</button>
+                  <button class="button hidden" id="staffCancelBtn" type="button">Cancel Edit</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Staff Rights</h2>
+                <p>Approve login and give staff rights</p>
+              </div>
+              <button class="button small danger" id="clearStaffBtn" type="button">Clear Employees</button>
+            </div>
+            <div class="panel-body">
+              <div class="list" id="staffList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="countsScreen">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Global Count Approval</h2>
+              <p>Approve or reject department physical count reports</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="filters">
+              <div class="field">
+                <label for="countStatusFilter">Status</label>
+                <select id="countStatusFilter">
+                  <option value="all">All</option>
+                  <option value="Submitted">Submitted</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="countGroupFilter">Group</label>
+                <select id="countGroupFilter"></select>
+              </div>
+              <div class="field">
+                <label>&nbsp;</label>
+                <button class="button" id="exportCountsBtn" type="button">Export Counts</button>
+              </div>
+            </div>
+            <div class="list" id="countList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="auditScreen">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>Audit Register</h2>
+              <p>Department-wise saved audit variance</p>
+            </div>
+            <button class="button small" id="exportAuditBtn" type="button">Export Audit</button>
+          </div>
+          <div class="panel-body">
+            <div class="filters">
+              <div class="field">
+                <label for="auditGroupFilter">Group</label>
+                <select id="auditGroupFilter"></select>
+              </div>
+              <div class="field">
+                <label for="auditSearch">Search</label>
+                <input id="auditSearch" type="search" autocomplete="off">
+              </div>
+              <div class="field">
+                <label>&nbsp;</label>
+                <button class="button" id="clearAuditBtn" type="button">Refresh List</button>
+              </div>
+            </div>
+            <div class="list" id="auditList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="messagesScreen">
+        <div class="two-cols">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Send Instruction</h2>
+                <p>Message alert for employees</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <form class="field" id="messageForm">
+                <div class="field">
+                  <label for="messageStore">Store</label>
+                  <select id="messageStore"></select>
+                </div>
+                <div class="field">
+                  <label for="messageGroup">Department / Group</label>
+                  <select id="messageGroup"></select>
+                </div>
+                <div class="field">
+                  <label for="messageTitle">Title</label>
+                  <input id="messageTitle" autocomplete="off" required>
+                </div>
+                <div class="field">
+                  <label for="messageBody">Instruction</label>
+                  <textarea id="messageBody" rows="4" required></textarea>
+                </div>
+                <button class="button primary" type="submit">Send Message</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Message Alerts</h2>
+                <p id="messageStatus">No messages</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="list" id="messageList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="backupScreen">
+        <div class="two-cols">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Backup</h2>
+                <p id="backupStatus">Auto backup ready</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="field">
+                <button class="button primary" id="exportBackupBtn" type="button">Export Backup</button>
+              </div>
+              <div class="field" style="margin-top:10px">
+                <label for="restoreBackupFile">Restore Backup</label>
+                <input id="restoreBackupFile" type="file" accept=".json">
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <h2>Auto Backup List</h2>
+                <p>Last saved snapshots</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="list" id="backupList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const STORAGE_KEY = "simple-stock-ledger-v2";
+    const BACKUP_KEY = "simple-stock-ledger-v2-backups";
+    const ADMIN_SESSION_KEY = "simple-stock-ledger-admin-session";
+    const DEFAULT_STORE_ID = "main-store";
+    const LEDGER_COLUMNS = {
+      article: { letter: "D", index: 3, label: "Article No" },
+      description: { letter: "F", index: 5, label: "Description" },
+      colour: { letter: "I", index: 8, label: "Colour" },
+      year: { letter: "T", index: 19, label: "Year" },
+      group: { letter: "U", index: 20, label: "Group" },
+      size: { letter: "V", index: 21, label: "Size" },
+      closingStock: { letter: "AG", index: 32, label: "Closing Stock" },
+      mrp: { letter: "AJ", index: 35, label: "MRP" }
+    };
+
+    const els = {
+      dataStatus: document.getElementById("dataStatus"),
+      adminStoreFilter: document.getElementById("adminStoreFilter"),
+      loginPanel: document.getElementById("loginPanel"),
+      loginUser: document.getElementById("loginUser"),
+      loginPin: document.getElementById("loginPin"),
+      loginBtn: document.getElementById("loginBtn"),
+      sessionBar: document.getElementById("sessionBar"),
+      sessionName: document.getElementById("sessionName"),
+      sessionDept: document.getElementById("sessionDept"),
+      adminPasswordBtn: document.getElementById("adminPasswordBtn"),
+      adminPasswordPanel: document.getElementById("adminPasswordPanel"),
+      adminPasswordForm: document.getElementById("adminPasswordForm"),
+      adminOldPassword: document.getElementById("adminOldPassword"),
+      adminNewPassword: document.getElementById("adminNewPassword"),
+      logoutBtn: document.getElementById("logoutBtn"),
+      metrics: document.getElementById("metrics"),
+      tabs: document.getElementById("tabs"),
+      main: document.getElementById("main"),
+      metricStock: document.getElementById("metricStock"),
+      metricArticles: document.getElementById("metricArticles"),
+      metricGroups: document.getElementById("metricGroups"),
+      metricPending: document.getElementById("metricPending"),
+      summarySearch: document.getElementById("summarySearch"),
+      summaryYear: document.getElementById("summaryYear"),
+      summarySort: document.getElementById("summarySort"),
+      summaryList: document.getElementById("summaryList"),
+      storeForm: document.getElementById("storeForm"),
+      storeName: document.getElementById("storeName"),
+      storePlace: document.getElementById("storePlace"),
+      storeDetails: document.getElementById("storeDetails"),
+      storeStatus: document.getElementById("storeStatus"),
+      storeList: document.getElementById("storeList"),
+      ledgerForm: document.getElementById("ledgerForm"),
+      ledgerStore: document.getElementById("ledgerStore"),
+      adminLedgerFile: document.getElementById("adminLedgerFile"),
+      adminLedgerStatus: document.getElementById("adminLedgerStatus"),
+      resetStoreStockBtn: document.getElementById("resetStoreStockBtn"),
+      staffFormTitle: document.getElementById("staffFormTitle"),
+      staffForm: document.getElementById("staffForm"),
+      staffName: document.getElementById("staffName"),
+      staffPhone: document.getElementById("staffPhone"),
+      staffPassword: document.getElementById("staffPassword"),
+      staffRole: document.getElementById("staffRole"),
+      staffStore: document.getElementById("staffStore"),
+      staffDepartments: document.getElementById("staffDepartments"),
+      staffSubmitBtn: document.getElementById("staffSubmitBtn"),
+      staffCancelBtn: document.getElementById("staffCancelBtn"),
+      clearStaffBtn: document.getElementById("clearStaffBtn"),
+      staffList: document.getElementById("staffList"),
+      countStatusFilter: document.getElementById("countStatusFilter"),
+      countGroupFilter: document.getElementById("countGroupFilter"),
+      countList: document.getElementById("countList"),
+      auditGroupFilter: document.getElementById("auditGroupFilter"),
+      auditSearch: document.getElementById("auditSearch"),
+      auditList: document.getElementById("auditList"),
+      messageForm: document.getElementById("messageForm"),
+      messageStore: document.getElementById("messageStore"),
+      messageGroup: document.getElementById("messageGroup"),
+      messageTitle: document.getElementById("messageTitle"),
+      messageBody: document.getElementById("messageBody"),
+      messageStatus: document.getElementById("messageStatus"),
+      messageList: document.getElementById("messageList"),
+      backupStatus: document.getElementById("backupStatus"),
+      backupList: document.getElementById("backupList"),
+      exportBackupBtn: document.getElementById("exportBackupBtn"),
+      restoreBackupFile: document.getElementById("restoreBackupFile"),
+      toast: document.getElementById("toast")
+    };
+
+    let state = loadState();
+    let editingStaffId = "";
+
+    document.querySelectorAll("[data-tab]").forEach((button) => {
+      button.addEventListener("click", () => switchTab(button.dataset.tab));
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", () => {
+      state = loadState();
+      renderAll();
+      showToast("Admin data refreshed");
+    });
+    els.loginBtn.addEventListener("click", login);
+    els.logoutBtn.addEventListener("click", logout);
+    els.adminPasswordBtn.addEventListener("click", () => {
+      els.adminPasswordPanel.classList.toggle("hidden");
+    });
+    els.adminPasswordForm.addEventListener("submit", changeAdminPassword);
+    els.loginPin.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") login();
+    });
+    els.summarySearch.addEventListener("input", renderSummary);
+    els.summaryYear.addEventListener("change", renderSummary);
+    els.summarySort.addEventListener("change", renderSummary);
+    els.adminStoreFilter.addEventListener("change", () => {
+      state.adminStoreFilter = els.adminStoreFilter.value || "all";
+      saveState();
+      renderAll();
+    });
+    els.storeForm.addEventListener("submit", saveStore);
+    els.staffForm.addEventListener("submit", saveStaff);
+    els.clearStaffBtn.addEventListener("click", clearEmployees);
+    els.staffCancelBtn.addEventListener("click", clearStaffEdit);
+    els.staffStore.addEventListener("change", () => renderStaffDepartmentCheckboxes());
+    els.staffRole.addEventListener("change", () => renderStaffDepartmentCheckboxes());
+    els.adminLedgerFile.addEventListener("change", handleLedgerFile);
+    els.resetStoreStockBtn.addEventListener("click", resetSelectedStoreStock);
+    els.ledgerStore.addEventListener("change", () => {
+      state.adminStoreFilter = els.ledgerStore.value || DEFAULT_STORE_ID;
+      saveState();
+      renderAll();
+    });
+    els.countStatusFilter.addEventListener("change", renderCounts);
+    els.countGroupFilter.addEventListener("change", renderCounts);
+    els.auditGroupFilter.addEventListener("change", renderAudit);
+    els.auditSearch.addEventListener("input", renderAudit);
+    els.messageForm.addEventListener("submit", sendMessage);
+    els.messageStore.addEventListener("change", syncMessageGroups);
+    els.exportBackupBtn.addEventListener("click", exportBackup);
+    els.restoreBackupFile.addEventListener("change", restoreBackup);
+    document.getElementById("exportSummaryBtn").addEventListener("click", exportSummary);
+    document.getElementById("exportCountsBtn").addEventListener("click", exportCounts);
+    document.getElementById("exportAuditBtn").addEventListener("click", exportAudit);
+    document.getElementById("clearAuditBtn").addEventListener("click", renderAudit);
+
+    renderAll();
+
+    function loadState() {
+      const fallback = {
+        inventory: [],
+        stores: [defaultStore()],
+        inventoryByStore: { [DEFAULT_STORE_ID]: [] },
+        ledgerByStore: {},
+        audits: [],
+        globalCounts: [],
+        messages: [],
+        staff: [adminUser()],
+        currentUserId: sessionStorage.getItem(ADMIN_SESSION_KEY) || "",
+        currentStoreId: DEFAULT_STORE_ID,
+        adminStoreFilter: "all",
+        ledgerName: "No ledger",
+        updatedAt: new Date().toISOString()
+      };
+      ensureStores(fallback);
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!saved) return fallback;
+        const loaded = {
+          inventory: Array.isArray(saved.inventory) ? saved.inventory : [],
+          stores: Array.isArray(saved.stores) ? saved.stores : [],
+          inventoryByStore: saved.inventoryByStore && typeof saved.inventoryByStore === "object" ? saved.inventoryByStore : {},
+          ledgerByStore: saved.ledgerByStore && typeof saved.ledgerByStore === "object" ? saved.ledgerByStore : {},
+          audits: Array.isArray(saved.audits) ? saved.audits : [],
+          globalCounts: Array.isArray(saved.globalCounts) ? saved.globalCounts : [],
+          messages: Array.isArray(saved.messages) ? saved.messages : [],
+          staff: normalizeStaff(Array.isArray(saved.staff) ? saved.staff : []),
+          currentUserId: sessionStorage.getItem(ADMIN_SESSION_KEY) || "",
+          currentStoreId: saved.currentStoreId || DEFAULT_STORE_ID,
+          adminStoreFilter: saved.adminStoreFilter || "all",
+          ledgerName: saved.ledgerName || "Stock ledger",
+          ledgerDate: saved.ledgerDate || "",
+          updatedAt: saved.updatedAt || ""
+        };
+        ensureStores(loaded);
+        ensureAdmin(loaded);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...loaded, currentUserId: "" }));
+        return loaded;
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function saveState() {
+      state.updatedAt = new Date().toISOString();
+      const snapshot = { ...state, currentUserId: "" };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+      writeAutoBackup(snapshot);
+    }
+
+    function writeAutoBackup(snapshot) {
+      try {
+        const now = new Date();
+        const backups = JSON.parse(localStorage.getItem(BACKUP_KEY) || "[]");
+        const backup = { id: uid(), at: now.toISOString(), source: "admin", data: snapshot };
+        if (backups[0] && now - new Date(backups[0].at) < 120000) backups[0] = backup;
+        else backups.unshift(backup);
+        localStorage.setItem(BACKUP_KEY, JSON.stringify(backups.slice(0, 5)));
+      } catch (error) {
+        console.warn("Auto backup skipped", error);
+      }
+    }
+
+    function defaultStore() {
+      return {
+        id: DEFAULT_STORE_ID,
+        name: "Main Store",
+        place: "",
+        details: "Default store",
+        active: true
+      };
+    }
+
+    function ensureStores(targetState = state) {
+      const stores = Array.isArray(targetState.stores) ? targetState.stores : [];
+      targetState.stores = stores.length
+        ? stores.map((store) => ({
+          id: clean(store.id) || uid(),
+          name: clean(store.name) || "Store",
+          place: clean(store.place),
+          details: clean(store.details),
+          active: store.active !== false
+        }))
+        : [defaultStore()];
+
+      const byStore = {};
+      if (targetState.inventoryByStore && typeof targetState.inventoryByStore === "object") {
+        Object.entries(targetState.inventoryByStore).forEach(([storeId, items]) => {
+          byStore[clean(storeId) || DEFAULT_STORE_ID] = Array.isArray(items) ? items : [];
+        });
+      }
+      if (!Object.keys(byStore).length) {
+        byStore[targetState.currentStoreId || targetState.stores[0].id || DEFAULT_STORE_ID] = Array.isArray(targetState.inventory) ? targetState.inventory : [];
+      }
+      targetState.stores.forEach((store) => {
+        if (!Array.isArray(byStore[store.id])) byStore[store.id] = [];
+      });
+      targetState.inventoryByStore = byStore;
+      targetState.currentStoreId = targetState.currentStoreId || targetState.stores[0]?.id || DEFAULT_STORE_ID;
+      targetState.adminStoreFilter = targetState.adminStoreFilter || "all";
+      targetState.ledgerByStore = targetState.ledgerByStore && typeof targetState.ledgerByStore === "object" ? targetState.ledgerByStore : {};
+      targetState.inventory = inventoryForStore(targetState.currentStoreId, targetState);
+    }
+
+    function selectedStoreId() {
+      return els.adminStoreFilter.value || state.adminStoreFilter || "all";
+    }
+
+    function inventoryForStore(storeId = "all", targetState = state) {
+      const byStore = targetState.inventoryByStore || {};
+      if (storeId === "all") {
+        return Object.entries(byStore).flatMap(([id, items]) => (Array.isArray(items) ? items : []).map((item) => ({
+          ...item,
+          storeId: id,
+          storeName: storeLabel(id, targetState)
+        })));
+      }
+      return (byStore[storeId] || []).map((item) => ({
+        ...item,
+        storeId,
+        storeName: storeLabel(storeId, targetState)
+      }));
+    }
+
+    function selectedInventory() {
+      return inventoryForStore(selectedStoreId());
+    }
+
+    function storeLabel(storeId, targetState = state) {
+      const store = (targetState.stores || []).find((item) => item.id === storeId);
+      if (!store) return "Store";
+      return [store.name, store.place].filter(Boolean).join(" - ");
+    }
+
+    function storeRecordMatches(record, storeId = selectedStoreId()) {
+      return storeId === "all" || (record.storeId || DEFAULT_STORE_ID) === storeId;
+    }
+
+    function staffStoreIds(staff) {
+      if (!staff) return [];
+      const role = staff.role || (staff.username === "admin" ? "admin" : "staff");
+      if (role === "admin" || staff.rights?.canAdmin) return ["ALL"];
+      if (Array.isArray(staff.storeIds)) return staff.storeIds.map(clean).filter(Boolean);
+      const storeId = clean(staff.storeId);
+      return storeId ? [storeId] : [DEFAULT_STORE_ID];
+    }
+
+    function staffStoreLabel(staff) {
+      const storeIds = staffStoreIds(staff);
+      if (storeIds.includes("ALL")) return "All Stores";
+      return storeIds.map((storeId) => storeLabel(storeId)).join(", ") || "No store";
+    }
+
+    function adminUser() {
+      return {
+        id: "admin",
+        name: "Admin",
+        empCode: "admin",
+        username: "admin",
+        phone: "9999999999",
+        pin: "admin",
+        password: "admin",
+        role: "admin",
+        departments: ["ALL"],
+        department: "ALL",
+        storeIds: ["ALL"],
+        storeId: "ALL",
+        approved: true,
+        active: true,
+        rights: defaultRights("admin")
+      };
+    }
+
+    function ensureAdmin(targetState = state) {
+      if (!targetState.staff.some((staff) => staff.username === "admin")) {
+        targetState.staff.unshift(adminUser());
+      }
+    }
+
+    function normalizeStaff(staffList) {
+      const normalized = staffList.filter((staff) => !isOldDemoStaff(staff)).map((staff) => {
+        const role = staff.role || (staff.username === "admin" ? "admin" : "staff");
+        const departments = staffDepartments(staff);
+        const storeIds = staffStoreIds({ ...staff, role });
+        const empCode = clean(staff.empCode || staff.employeeCode || staff.code || staff.username || staff.phone || (role === "admin" ? "admin" : ""));
+        const phone = staff.phone || staff.mobile || "";
+        return {
+          ...staff,
+          id: staff.id || uid(),
+          empCode,
+          phone,
+          password: staff.password || staff.pin || "1234",
+          username: empCode || clean(staff.name).toLowerCase().replace(/\s+/g, "."),
+          pin: staff.pin || staff.password || "1234",
+          role,
+          departments: departments.length ? departments : (role === "admin" ? ["ALL"] : []),
+          department: departments.length ? departments.join(", ") : (role === "admin" ? "ALL" : ""),
+          storeIds,
+          storeId: storeIds[0] || DEFAULT_STORE_ID,
+          approved: staff.approved !== false || role === "admin",
+          active: staff.active !== false,
+          rights: { ...defaultRights(role), ...(staff.rights || {}) }
+        };
+      });
+      return normalized.length ? normalized : [adminUser()];
+    }
+
+    function isOldDemoStaff(staff) {
+      const name = clean(staff.name).toLowerCase();
+      const code = codeKey(staff.empCode || staff.username || staff.phone);
+      return (name === "ravi kumar" && code === "9876543210") || (name === "anita sharma" && code === "9876501234");
+    }
+
+    function defaultRights(role) {
+      return {
+        canAudit: true,
+        canGlobalCount: true,
+        canUploadLedger: true,
+        canFullStoreAudit: role === "admin",
+        canManageStaff: role === "admin",
+        canAdmin: role === "admin"
+      };
+    }
+
+    function currentUser() {
+      return state.staff.find((staff) => staff.id === state.currentUserId && staff.active !== false) || null;
+    }
+
+    function isAdmin(user = currentUser()) {
+      return user?.role === "admin" || user?.rights?.canAdmin;
+    }
+
+    function login() {
+      const empCode = codeKey(els.loginUser.value);
+      const password = clean(els.loginPin.value);
+      const user = state.staff.find((staff) => {
+        const savedCode = codeKey(staff.empCode || staff.username);
+        const savedPassword = clean(staff.password || staff.pin);
+        const savedPin = clean(staff.pin);
+        return savedCode === empCode && (savedPassword === password || savedPin === password) && staff.active !== false;
+      });
+      if (!user) {
+        showToast("Admin login not found");
+        return;
+      }
+      if (!isAdmin(user)) {
+        showToast("Admin rights required");
+        return;
+      }
+      if (user.approved === false) {
+        showToast("Login pending approval");
+        return;
+      }
+      state.currentUserId = user.id;
+      sessionStorage.setItem(ADMIN_SESSION_KEY, user.id);
+      saveState();
+      els.loginPin.value = "";
+      renderAll();
+      showToast(`Logged in: ${user.name}`);
+    }
+
+    function logout() {
+      state.currentUserId = "";
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      saveState();
+      renderAll();
+      showToast("Logged out");
+    }
+
+    function renderAll() {
+      ensureStores();
+      ensureAdmin();
+      const user = currentUser();
+      const loggedIn = !!user && isAdmin(user);
+      els.loginPanel.classList.toggle("hidden", loggedIn);
+      els.sessionBar.classList.toggle("hidden", !loggedIn);
+      els.adminStoreFilter.classList.toggle("hidden", !loggedIn);
+      els.metrics.classList.toggle("hidden", !loggedIn);
+      els.tabs.classList.toggle("hidden", !loggedIn);
+      els.main.classList.toggle("hidden", !loggedIn);
+
+      if (!loggedIn) {
+        els.dataStatus.textContent = "Login required for admin controls";
+        return;
+      }
+
+      els.sessionName.textContent = user.name;
+      els.sessionDept.textContent = staffDepartmentLabel(user);
+      syncFilters();
+      const inventory = selectedInventory();
+      els.dataStatus.textContent = `${selectedStoreId() === "all" ? "All Stores" : storeLabel(selectedStoreId())} - ${formatNumber(inventory.length)} items`;
+      renderMetrics();
+      renderSummary();
+      renderStores();
+      renderStaff();
+      renderCounts();
+      renderAudit();
+      renderAdminMessages();
+      renderBackup();
+    }
+
+    function syncFilters() {
+      const currentStore = state.adminStoreFilter || "all";
+      const currentStaffStore = editingStaffId
+        ? els.staffStore.value || DEFAULT_STORE_ID
+        : currentStore === "all" ? els.staffStore.value || DEFAULT_STORE_ID : currentStore;
+      const currentLedgerStore = els.ledgerStore.value || (currentStore === "all" ? DEFAULT_STORE_ID : currentStore);
+      const currentMessageStore = els.messageStore.value || "all";
+      const activeStores = state.stores.filter((store) => store.active !== false);
+      els.adminStoreFilter.innerHTML = `<option value="all">All Stores</option>` + state.stores.filter((store) => store.active !== false).map((store) => `<option value="${escapeHtml(store.id)}">${escapeHtml([store.name, store.place].filter(Boolean).join(" - "))}</option>`).join("");
+      els.adminStoreFilter.value = Array.from(els.adminStoreFilter.options).some((option) => option.value === currentStore) ? currentStore : "all";
+      state.adminStoreFilter = els.adminStoreFilter.value;
+      const storeOptions = activeStores.map((store) => `<option value="${escapeHtml(store.id)}">${escapeHtml([store.name, store.place].filter(Boolean).join(" - "))}</option>`).join("");
+      els.staffStore.innerHTML = storeOptions;
+      els.ledgerStore.innerHTML = storeOptions;
+      els.messageStore.innerHTML = `<option value="all">All Stores</option>` + storeOptions;
+      els.staffStore.value = activeStores.some((store) => store.id === currentStaffStore) ? currentStaffStore : activeStores[0]?.id || DEFAULT_STORE_ID;
+      els.ledgerStore.value = activeStores.some((store) => store.id === currentLedgerStore) ? currentLedgerStore : activeStores[0]?.id || DEFAULT_STORE_ID;
+      els.messageStore.value = Array.from(els.messageStore.options).some((option) => option.value === currentMessageStore) ? currentMessageStore : "all";
+      els.adminLedgerStatus.textContent = `Upload stock ledger for ${storeLabel(els.ledgerStore.value)}`;
+      renderStaffDepartmentCheckboxes(selectedStaffDepartments());
+      syncMessageGroups();
+      const inventory = selectedInventory();
+      const groups = unique(inventory.map((item) => item.group));
+      const years = unique(inventory.map((item) => item.year)).filter(Boolean);
+      fillSelect(els.summaryYear, "All years", years);
+      fillSelect(els.countGroupFilter, "All groups", groups);
+      fillSelect(els.auditGroupFilter, "All groups", groups);
+    }
+
+    function fillSelect(select, allLabel, values) {
+      const current = select.value;
+      select.innerHTML = `<option value="all">${escapeHtml(allLabel)}</option>`
+        + values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
+      if (Array.from(select.options).some((option) => option.value === current)) select.value = current;
+    }
+
+    function renderMetrics() {
+      const inventory = selectedInventory();
+      const totalStock = inventory.reduce((sum, item) => sum + numeric(item.closingStock), 0);
+      const pending = state.globalCounts.filter((report) => report.status === "Submitted" && storeRecordMatches(report)).length;
+      els.metricStock.textContent = formatNumber(totalStock);
+      els.metricArticles.textContent = formatNumber(unique(inventory.map((item) => item.baseArticle || item.article)).length);
+      els.metricGroups.textContent = formatNumber(unique(inventory.map((item) => item.group)).length);
+      els.metricPending.textContent = formatNumber(pending);
+    }
+
+    function renderSummary() {
+      const query = clean(els.summarySearch.value).toLowerCase();
+      const year = els.summaryYear.value || "all";
+      const sort = els.summarySort.value;
+      const storeFilter = selectedStoreId();
+      const totals = new Map();
+
+      selectedInventory().forEach((item) => {
+        if (year !== "all" && item.year !== year) return;
+        if (query && !clean(item.group).toLowerCase().includes(query)) return;
+        const group = item.group || "N.A.";
+        const key = storeFilter === "all" ? `${item.storeId}|${group}` : group;
+        if (!totals.has(key)) totals.set(key, { group, storeName: item.storeName || storeLabel(item.storeId), qty: 0, articles: new Set(), shades: new Set(), sizes: new Set() });
+        const total = totals.get(key);
+        total.qty += numeric(item.closingStock);
+        total.articles.add(item.baseArticle || item.article);
+        if (item.shadeCode) total.shades.add(item.shadeCode);
+        if (item.size) total.sizes.add(item.size);
+      });
+
+      let rows = Array.from(totals.entries());
+      if (sort === "group") rows.sort((a, b) => a[1].group.localeCompare(b[1].group) || a[1].storeName.localeCompare(b[1].storeName));
+      else if (sort === "articles") rows.sort((a, b) => b[1].articles.size - a[1].articles.size);
+      else rows.sort((a, b) => b[1].qty - a[1].qty);
+
+      if (!rows.length) {
+        els.summaryList.innerHTML = `<div class="empty"><div><strong>No stock summary</strong><span>Upload ledger in staff app first.</span></div></div>`;
+        return;
+      }
+
+      els.summaryList.innerHTML = rows.map(([group, total]) => `
+        <article class="card">
+          <div class="row-main">
+            <div>
+              <strong>${escapeHtml(total.group || group)}</strong>
+              <small>${escapeHtml(total.storeName)} | Qty ${formatNumber(total.qty)} | ${formatNumber(total.articles.size)} articles | ${formatNumber(total.shades.size)} shades | ${formatNumber(total.sizes.size)} sizes</small>
+            </div>
+            <span class="status match">${formatNumber(total.qty)}</span>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function renderStores() {
+      const activeStores = state.stores.filter((store) => store.active !== false);
+      els.storeStatus.textContent = `${formatNumber(activeStores.length)} stores`;
+      els.storeList.innerHTML = activeStores.length
+        ? activeStores.map((store) => {
+          const stockItems = inventoryForStore(store.id);
+          const qty = stockItems.reduce((sum, item) => sum + numeric(item.closingStock), 0);
+          const staffCount = state.staff.filter((staff) => staff.active !== false && staffStoreIds(staff).includes(store.id)).length;
+          const ledger = state.ledgerByStore?.[store.id] || {};
+          return `
+            <article class="card">
+              <div class="row-main">
+                <div>
+                  <strong>${escapeHtml(store.name)}</strong>
+                  <small>${escapeHtml(store.place || "No place")} - ${escapeHtml(store.details || "No details")}</small>
+                </div>
+                <span class="status match">${formatNumber(qty)}</span>
+              </div>
+              <small>${formatNumber(stockItems.length)} rows | ${formatNumber(staffCount)} staff | ${escapeHtml(ledger.name || "No ledger")}</small>
+            </article>
+          `;
+        }).join("")
+        : `<div class="empty"><div><strong>No stores</strong><span>Create first store for ledger upload.</span></div></div>`;
+    }
+
+    function saveStore(event) {
+      event.preventDefault();
+      const name = clean(els.storeName.value);
+      const place = clean(els.storePlace.value);
+      const details = clean(els.storeDetails.value);
+      if (!name || !place) {
+        showToast("Store name and place required");
+        return;
+      }
+      let id = slugStore(name, place);
+      let suffix = 2;
+      while (state.stores.some((store) => store.id === id)) {
+        id = `${slugStore(name, place)}-${suffix}`;
+        suffix += 1;
+      }
+      state.stores.push({ id, name, place, details, active: true });
+      state.inventoryByStore[id] = [];
+      state.ledgerByStore[id] = { name: "No ledger", date: "" };
+      state.adminStoreFilter = id;
+      els.storeForm.reset();
+      saveState();
+      renderAll();
+      switchTab("stores");
+      showToast("Store created");
+    }
+
+    function saveStaff(event) {
+      event.preventDefault();
+      const role = clean(els.staffRole.value) || "staff";
+      const empCode = clean(els.staffPhone.value);
+      const password = clean(els.staffPassword.value);
+      const departments = role === "admin" ? ["ALL"] : selectedStaffDepartments();
+      const storeId = role === "admin" ? "ALL" : clean(els.staffStore.value);
+      if (!clean(els.staffName.value) || !empCode || !password || (role !== "admin" && (!storeId || !departments.length))) {
+        showToast("Name, EMP Code, password, store and department checkbox required");
+        return;
+      }
+      const matchingCode = state.staff.find((person) => person.id !== editingStaffId && codeKey(person.empCode || person.username) === codeKey(empCode));
+      if (matchingCode && matchingCode.active !== false) {
+        showToast("EMP Code already exists");
+        return;
+      }
+      const existing = editingStaffId ? state.staff.find((person) => person.id === editingStaffId) : matchingCode || null;
+      const wasDeleted = existing?.active === false;
+      const staff = existing || { id: uid(), approved: true, active: true };
+      Object.assign(staff, {
+        name: clean(els.staffName.value),
+        empCode,
+        phone: existing?.phone || "",
+        username: empCode,
+        password,
+        pin: password,
+        role,
+        departments,
+        department: departments.join(", "),
+        storeIds: role === "admin" ? ["ALL"] : [storeId],
+        storeId,
+        approved: existing && !wasDeleted ? existing.approved !== false : true,
+        active: true,
+        rights: { ...defaultRights(role), ...(existing?.rights || {}) }
+      });
+      staff.rights.canAdmin = role === "admin";
+      staff.rights.canManageStaff = role === "admin" || !!staff.rights.canManageStaff;
+      if (!existing) state.staff.push(staff);
+      clearStaffEdit();
+      saveState();
+      renderAll();
+      switchTab("staff");
+      showToast(wasDeleted ? "Employee restored" : existing ? "Employee updated" : "Employee created");
+    }
+
+    function editStaff(id) {
+      const staff = state.staff.find((person) => person.id === id);
+      if (!staff) return;
+      editingStaffId = id;
+      els.staffFormTitle.textContent = "Edit Employee";
+      els.staffSubmitBtn.textContent = "Update Employee";
+      els.staffCancelBtn.classList.remove("hidden");
+      els.staffName.value = staff.name || "";
+      els.staffPhone.value = staff.empCode || staff.username || staff.phone || "";
+      els.staffPassword.value = staff.password || staff.pin || "";
+      els.staffRole.value = staff.role || "staff";
+      const storeIds = staffStoreIds(staff);
+      if (!storeIds.includes("ALL")) els.staffStore.value = storeIds[0] || DEFAULT_STORE_ID;
+      renderStaffDepartmentCheckboxes(staffDepartments(staff).filter((department) => department !== "ALL"));
+      switchTab("staff");
+      showToast("Employee ready to edit");
+    }
+
+    function deleteStaff(id) {
+      const staff = state.staff.find((person) => person.id === id);
+      if (!staff) return;
+      if (staff.id === "admin") {
+        showToast("Default admin cannot be deleted");
+        return;
+      }
+      staff.active = false;
+      if (editingStaffId === id) clearStaffEdit();
+      saveState();
+      renderAll();
+      showToast("Employee deleted");
+    }
+
+    function clearStaffEdit() {
+      editingStaffId = "";
+      els.staffForm.reset();
+      els.staffFormTitle.textContent = "Create Employee";
+      els.staffSubmitBtn.textContent = "Create Employee";
+      els.staffCancelBtn.classList.add("hidden");
+      if (els.staffStore.options.length) els.staffStore.value = els.staffStore.options[0].value;
+      renderStaffDepartmentCheckboxes();
+    }
+
+    function clearEmployees() {
+      state.staff.forEach((staff) => {
+        if (staff.id !== "admin" && !(staff.role === "admin" || staff.rights?.canAdmin)) {
+          staff.active = false;
+        }
+      });
+      clearStaffEdit();
+      saveState();
+      renderAll();
+      showToast("Employee data cleared");
+    }
+
+    function changeAdminPassword(event) {
+      event.preventDefault();
+      const user = currentUser();
+      if (!user) return;
+      const oldPassword = clean(els.adminOldPassword.value);
+      const newPassword = clean(els.adminNewPassword.value);
+      if (!newPassword) {
+        showToast("New password required");
+        return;
+      }
+      if (clean(user.password || user.pin) !== oldPassword && clean(user.pin) !== oldPassword) {
+        showToast("Current password not matching");
+        return;
+      }
+      user.password = newPassword;
+      user.pin = newPassword;
+      els.adminPasswordForm.reset();
+      els.adminPasswordPanel.classList.add("hidden");
+      saveState();
+      renderAll();
+      showToast("Admin password updated");
+    }
+
+    function renderStaffDepartmentCheckboxes(selected = selectedStaffDepartments()) {
+      const role = clean(els.staffRole.value) || "staff";
+      if (role === "admin") {
+        els.staffDepartments.innerHTML = `<div class="empty-note">Admin role gets all departments automatically.</div>`;
+        return;
+      }
+      const storeId = clean(els.staffStore.value) || DEFAULT_STORE_ID;
+      const ledgerGroups = unique(inventoryForStore(storeId).map((item) => item.group));
+      const selectedSet = new Set(selected.map(clean).filter(Boolean));
+      const values = unique(ledgerGroups.concat(Array.from(selectedSet)));
+      if (!values.length) {
+        els.staffDepartments.innerHTML = `<div class="empty-note">Upload stock ledger for this store first. Departments will come from ledger Group column.</div>`;
+        return;
+      }
+      els.staffDepartments.innerHTML = values.map((department) => `
+        <label class="check">
+          <input type="checkbox" value="${escapeHtml(department)}" ${selectedSet.has(department) ? "checked" : ""}>
+          <span>${escapeHtml(department)}</span>
+        </label>
+      `).join("");
+    }
+
+    function selectedStaffDepartments() {
+      return Array.from(els.staffDepartments.querySelectorAll("input:checked")).map((input) => clean(input.value)).filter(Boolean);
+    }
+
+    function slugStore(name, place) {
+      return clean(`${name}-${place}`).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || uid();
+    }
+
+    function renderStaff() {
+      const storeFilter = selectedStoreId();
+      const visible = state.staff.filter((staff) => {
+        const storeIds = staffStoreIds(staff);
+        return staff.active !== false && (storeFilter === "all" || storeIds.includes("ALL") || storeIds.includes(storeFilter));
+      });
+      if (!visible.length) {
+        els.staffList.innerHTML = `<div class="empty"><div><strong>No staff</strong><span>Create employee from admin panel.</span></div></div>`;
+        return;
+      }
+      els.staffList.innerHTML = visible.map((staff) => `
+        <article class="card">
+          <div class="row-main">
+            <div>
+              <strong>${escapeHtml(staff.name)}</strong>
+              <small>EMP ${escapeHtml(staff.empCode || staff.username || "-")} - ${escapeHtml(staff.role || "staff")} - ${escapeHtml(staffStoreLabel(staff))} - ${escapeHtml(staffDepartmentLabel(staff))}</small>
+            </div>
+            <span class="status ${staff.approved === false ? "excess" : "match"}">${staff.approved === false ? "Pending" : "Approved"}</span>
+          </div>
+          <div class="rights">
+            <label class="check"><input type="checkbox" data-approved="${escapeHtml(staff.id)}" ${staff.approved === false ? "" : "checked"}>Approve Login</label>
+            ${rightCheck(staff, "canAudit", "Audit")}
+            ${rightCheck(staff, "canGlobalCount", "Global Count")}
+            ${rightCheck(staff, "canUploadLedger", "Ledger Upload")}
+            ${rightCheck(staff, "canFullStoreAudit", "Full Store Audit")}
+            ${rightCheck(staff, "canManageStaff", "Manage Staff")}
+            ${rightCheck(staff, "canAdmin", "Admin")}
+          </div>
+          <div class="row-actions" style="justify-content:flex-start">
+            <button class="button small" type="button" data-edit-staff="${escapeHtml(staff.id)}">Edit</button>
+            <button class="button small danger" type="button" data-delete-staff="${escapeHtml(staff.id)}">Delete</button>
+          </div>
+        </article>
+      `).join("");
+
+      els.staffList.querySelectorAll("[data-approved]").forEach((input) => {
+        input.addEventListener("change", () => updateApproval(input.dataset.approved, input.checked));
+      });
+      els.staffList.querySelectorAll("[data-right]").forEach((input) => {
+        input.addEventListener("change", () => updateRight(input.dataset.staff, input.dataset.right, input.checked));
+      });
+      els.staffList.querySelectorAll("[data-edit-staff]").forEach((button) => {
+        button.addEventListener("click", () => editStaff(button.dataset.editStaff));
+      });
+      els.staffList.querySelectorAll("[data-delete-staff]").forEach((button) => {
+        button.addEventListener("click", () => deleteStaff(button.dataset.deleteStaff));
+      });
+    }
+
+    function rightCheck(staff, right, label) {
+      return `<label class="check"><input type="checkbox" data-staff="${escapeHtml(staff.id)}" data-right="${escapeHtml(right)}" ${staff.rights?.[right] ? "checked" : ""}>${escapeHtml(label)}</label>`;
+    }
+
+    function updateApproval(id, approved) {
+      const staff = state.staff.find((person) => person.id === id);
+      if (!staff) return;
+      staff.approved = approved;
+      saveState();
+      renderAll();
+      showToast("Staff approval updated");
+    }
+
+    function updateRight(id, right, value) {
+      const staff = state.staff.find((person) => person.id === id);
+      if (!staff) return;
+      staff.rights = { ...defaultRights(staff.role || "staff"), ...(staff.rights || {}), [right]: value };
+      staff.role = staff.rights.canAdmin ? "admin" : "staff";
+      saveState();
+      renderAll();
+      showToast("Staff right updated");
+    }
+
+    function renderCounts() {
+      const status = els.countStatusFilter.value || "all";
+      const group = els.countGroupFilter.value || "all";
+      const reports = state.globalCounts.filter((report) => {
+        return (status === "all" || report.status === status)
+          && (group === "all" || report.group === group)
+          && storeRecordMatches(report);
+      });
+
+      if (!reports.length) {
+        els.countList.innerHTML = `<div class="empty"><div><strong>No count reports</strong><span>Staff physical count submissions appear here.</span></div></div>`;
+        return;
+      }
+
+      els.countList.innerHTML = reports.map((report) => `
+        <article class="card">
+          <div class="row-main">
+            <div>
+              <strong>${escapeHtml(report.group)}</strong>
+              <small>${escapeHtml(report.date)} - ${escapeHtml(report.storeName || storeLabel(report.storeId || DEFAULT_STORE_ID))} - ${escapeHtml(report.staffName)} - ${escapeHtml(report.status)}</small>
+            </div>
+            <span class="status ${report.status === "Approved" ? "match" : report.status === "Rejected" ? "short" : "excess"}">${escapeHtml(report.status)}</span>
+          </div>
+          <div class="variance">
+            <div><span>Ledger</span><strong>${formatNumber(report.ledgerQty)}</strong></div>
+            <div><span>Physical</span><strong>${formatNumber(report.countedQty)}</strong></div>
+            <div><span>Variance</span><strong>${signed(report.variance)}</strong></div>
+          </div>
+          <div class="row-actions" style="justify-content:flex-start">
+            <button class="button small" type="button" data-count="${escapeHtml(report.id)}" data-status="Approved">Approve</button>
+            <button class="button small danger" type="button" data-count="${escapeHtml(report.id)}" data-status="Rejected">Reject</button>
+          </div>
+        </article>
+      `).join("");
+
+      els.countList.querySelectorAll("[data-count]").forEach((button) => {
+        button.addEventListener("click", () => updateCountStatus(button.dataset.count, button.dataset.status));
+      });
+    }
+
+    function updateCountStatus(id, status) {
+      const report = state.globalCounts.find((item) => item.id === id);
+      if (!report) return;
+      report.status = status;
+      report.approvedBy = currentUser()?.name || "Admin";
+      report.approvedAt = new Date().toISOString();
+      saveState();
+      renderAll();
+      showToast(`Report ${status.toLowerCase()}`);
+    }
+
+    function renderAudit() {
+      const group = els.auditGroupFilter.value || "all";
+      const query = clean(els.auditSearch.value).toLowerCase();
+      const rows = state.audits.filter((audit) => {
+        return auditMatchesGroup(audit, group)
+          && storeRecordMatches(audit)
+          && auditMatchesQuery(audit, query);
+      });
+
+      if (!rows.length) {
+        els.auditList.innerHTML = `<div class="empty"><div><strong>No audit reports</strong><span>Submitted employee audit reports appear here.</span></div></div>`;
+        return;
+      }
+
+      els.auditList.innerHTML = rows.map((audit) => auditReportCard(audit)).join("");
+    }
+
+    function auditItems(audit) {
+      return Array.isArray(audit.items) && audit.items.length ? audit.items : [audit];
+    }
+
+    function auditStatus(variance) {
+      return variance < 0 ? "short" : variance > 0 ? "excess" : "match";
+    }
+
+    function auditSummary(audit) {
+      const items = auditItems(audit);
+      const ledgerQty = numeric(audit.ledgerQty) || items.reduce((sum, item) => sum + numeric(item.ledgerQty), 0);
+      const countedQty = numeric(audit.countedQty) || items.reduce((sum, item) => sum + numeric(item.countedQty), 0);
+      const variance = countedQty - ledgerQty;
+      return {
+        ledgerQty,
+        countedQty,
+        variance,
+        status: audit.status || auditStatus(variance),
+        itemCount: items.length,
+        diffArticleCount: numeric(audit.diffArticleCount) || items.filter((item) => numeric(item.variance) !== 0).length
+      };
+    }
+
+    function auditMatchesGroup(audit, group) {
+      if (group === "all") return true;
+      return auditItems(audit).some((item) => item.group === group) || audit.group === group;
+    }
+
+    function auditMatchesQuery(audit, query) {
+      if (!query) return true;
+      const haystack = [audit.article, audit.description, audit.group, audit.staffName, audit.status, audit.scope]
+        .concat(auditItems(audit).flatMap((item) => [item.article, item.description, item.group, item.status]))
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    }
+
+    function auditReportCard(audit) {
+      const summary = auditSummary(audit);
+      const title = audit.type === "auditReport" ? audit.article : `${audit.article} Audit`;
+      const scope = audit.scope || audit.staffDepartment || audit.group || "Department";
+      const date = audit.submittedAt || audit.countedAt;
+      return `
+        <article class="card">
+          <div class="row-main">
+            <div>
+              <strong>${escapeHtml(title)}</strong>
+              <small>${escapeHtml(audit.storeName || storeLabel(audit.storeId || DEFAULT_STORE_ID))} - ${escapeHtml(audit.staffName || "")} - ${escapeHtml(scope)} - ${date ? new Date(date).toLocaleString() : ""}</small>
+            </div>
+            <span class="status ${escapeHtml(summary.status || "excess")}">${escapeHtml(summary.status || "Saved")}</span>
+          </div>
+          <div class="variance audit-variance">
+            <div><span>Ledger</span><strong>${formatNumber(summary.ledgerQty)}</strong></div>
+            <div><span>Counted</span><strong>${formatNumber(summary.countedQty)}</strong></div>
+            <div><span>Variance</span><strong>${signed(summary.variance)}</strong></div>
+            <div><span>Diff Articles</span><strong>${formatNumber(summary.diffArticleCount)}</strong></div>
+          </div>
+          <details class="audit-details">
+            <summary>View details (${formatNumber(summary.itemCount)} articles)</summary>
+            <div class="audit-detail-list">${auditItems(audit).map((item) => auditDetailRow(item)).join("")}</div>
+          </details>
+        </article>
+      `;
+    }
+
+    function auditDetailRow(item) {
+      return `
+        <div class="row-main">
+          <div>
+            <strong>${escapeHtml(item.article || "-")}</strong>
+            <small>${escapeHtml(item.description || "")} - ${escapeHtml(item.group || "N.A.")} | Ledger ${formatNumber(item.ledgerQty)} | Counted ${formatNumber(item.countedQty)} | Diff ${signed(item.variance)}</small>
+          </div>
+          <span class="status ${escapeHtml(item.status || auditStatus(numeric(item.variance)))}">${escapeHtml(item.status || auditStatus(numeric(item.variance)))}</span>
+        </div>
+      `;
+    }
+
+    function syncMessageGroups() {
+      const storeId = els.messageStore.value || "all";
+      const groups = unique(inventoryForStore(storeId).map((item) => item.group));
+      const current = els.messageGroup.value || "all";
+      els.messageGroup.innerHTML = `<option value="all">All Departments</option>` + groups.map((group) => `<option value="${escapeHtml(group)}">${escapeHtml(group)}</option>`).join("");
+      if (Array.from(els.messageGroup.options).some((option) => option.value === current)) els.messageGroup.value = current;
+    }
+
+    function sendMessage(event) {
+      event.preventDefault();
+      const title = clean(els.messageTitle.value);
+      const body = clean(els.messageBody.value);
+      if (!title || !body) {
+        showToast("Message title and instruction required");
+        return;
+      }
+      state.messages = Array.isArray(state.messages) ? state.messages : [];
+      state.messages.unshift({
+        id: uid(),
+        title,
+        body,
+        storeId: els.messageStore.value || "all",
+        department: els.messageGroup.value || "all",
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser()?.name || "Admin",
+        active: true,
+        readBy: []
+      });
+      els.messageForm.reset();
+      saveState();
+      renderAll();
+      switchTab("messages");
+      showToast("Message sent to employee app");
+    }
+
+    function renderAdminMessages() {
+      const messages = (state.messages || []).filter((message) => message.active !== false);
+      els.messageStatus.textContent = `${formatNumber(messages.length)} active messages`;
+      if (!messages.length) {
+        els.messageList.innerHTML = `<div class="empty"><div><strong>No messages</strong><span>Send instruction to employee app.</span></div></div>`;
+        return;
+      }
+      els.messageList.innerHTML = messages.map((message) => `
+        <article class="card">
+          <div class="row-main">
+            <div>
+              <strong>${escapeHtml(message.title)}</strong>
+              <small>${escapeHtml(message.storeId === "all" ? "All Stores" : storeLabel(message.storeId))} - ${escapeHtml(message.department === "all" ? "All Departments" : message.department)} - ${new Date(message.createdAt).toLocaleString()}</small>
+            </div>
+            <span class="status match">${formatNumber((message.readBy || []).length)} read</span>
+          </div>
+          <p>${escapeHtml(message.body)}</p>
+          <div class="row-actions" style="justify-content:flex-start">
+            <button class="button small danger" type="button" data-message-delete="${escapeHtml(message.id)}">Delete</button>
+          </div>
+        </article>
+      `).join("");
+      els.messageList.querySelectorAll("[data-message-delete]").forEach((button) => {
+        button.addEventListener("click", () => deleteMessage(button.dataset.messageDelete));
+      });
+    }
+
+    function deleteMessage(id) {
+      const message = state.messages.find((item) => item.id === id);
+      if (!message) return;
+      message.active = false;
+      saveState();
+      renderAll();
+      showToast("Message deleted");
+    }
+
+    function exportBackup() {
+      const backup = {
+        exportedAt: new Date().toISOString(),
+        app: "stock-ledger",
+        data: { ...state, currentUserId: "" },
+        backups: readBackups()
+      };
+      downloadJson(`stock-backup-${new Date().toISOString().slice(0, 10)}.json`, backup);
+    }
+
+    async function restoreBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const parsed = JSON.parse(await file.text());
+        const restored = parsed.data || parsed;
+        if (!restored || !Array.isArray(restored.staff)) throw new Error("Backup file not valid");
+        const sessionId = state.currentUserId;
+        state = {
+          ...restored,
+          currentUserId: sessionId,
+          staff: normalizeStaff(restored.staff || []),
+          stores: Array.isArray(restored.stores) ? restored.stores : [],
+          inventoryByStore: restored.inventoryByStore || {},
+          ledgerByStore: restored.ledgerByStore || {},
+          audits: Array.isArray(restored.audits) ? restored.audits : [],
+          globalCounts: Array.isArray(restored.globalCounts) ? restored.globalCounts : [],
+          messages: Array.isArray(restored.messages) ? restored.messages : []
+        };
+        ensureStores();
+        saveState();
+        renderAll();
+        showToast("Backup restored");
+      } catch (error) {
+        showToast(error.message || "Backup restore failed");
+      } finally {
+        event.target.value = "";
+      }
+    }
+
+    function renderBackup() {
+      const backups = readBackups();
+      els.backupStatus.textContent = backups[0] ? `Last backup ${new Date(backups[0].at).toLocaleString()}` : "No backup saved yet";
+      els.backupList.innerHTML = backups.length
+        ? backups.map((backup) => `
+          <article class="card">
+            <div class="row-main">
+              <div>
+                <strong>${new Date(backup.at).toLocaleString()}</strong>
+                <small>${escapeHtml(backup.source || "app")} - ${formatNumber(backup.data?.staff?.length || 0)} employees - ${formatNumber(Object.keys(backup.data?.inventoryByStore || {}).length)} stores</small>
+              </div>
+              <span class="status match">Auto</span>
+            </div>
+          </article>
+        `).join("")
+        : `<div class="empty"><div><strong>No backups</strong><span>Backup is created after saving data.</span></div></div>`;
+    }
+
+    function readBackups() {
+      try {
+        return JSON.parse(localStorage.getItem(BACKUP_KEY) || "[]");
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function downloadJson(filename, data) {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast(`${filename} downloaded`);
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll("[data-tab]").forEach((button) => button.classList.toggle("active", button.dataset.tab === tab));
+      document.querySelectorAll(".screen").forEach((screen) => screen.classList.remove("active"));
+      document.getElementById(`${tab}Screen`).classList.add("active");
+    }
+
+    async function handleLedgerFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const rows = await readLedgerRows(file);
+        const items = rowsToInventory(rows);
+        if (!items.length) throw new Error("No stock rows found in selected columns");
+        replaceStoreInventory(els.ledgerStore.value || DEFAULT_STORE_ID, items, file.name);
+      } catch (error) {
+        showToast(error.message || "Ledger import failed");
+      } finally {
+        event.target.value = "";
+      }
+    }
+
+    async function readLedgerRows(file) {
+      const name = file.name.toLowerCase();
+      if (name.endsWith(".xls")) {
+        const buffer = await file.arrayBuffer();
+        return parseXlsWorkbook(buffer);
+      }
+      const text = await file.text();
+      return parseDelimited(text);
+    }
+
+    function replaceStoreInventory(storeId, items, ledgerName) {
+      const inventory = normaliseItems(items);
+      state.inventoryByStore[storeId] = inventory;
+      state.currentStoreId = storeId;
+      state.inventory = inventoryForStore(state.currentStoreId);
+      state.audits = state.audits.filter((audit) => (audit.storeId || DEFAULT_STORE_ID) !== storeId);
+      state.ledgerByStore[storeId] = { name: ledgerName, date: new Date().toISOString() };
+      state.ledgerName = ledgerName;
+      state.ledgerDate = state.ledgerByStore[storeId].date;
+      state.adminStoreFilter = storeId;
+      els.adminStoreFilter.value = storeId;
+      saveState();
+      renderAll();
+      switchTab("stores");
+      showToast(`${formatNumber(inventory.length)} stock rows imported for ${storeLabel(storeId)}`);
+    }
+
+    function resetSelectedStoreStock() {
+      const storeId = els.ledgerStore.value || DEFAULT_STORE_ID;
+      state.inventoryByStore[storeId] = [];
+      state.audits = state.audits.filter((audit) => (audit.storeId || DEFAULT_STORE_ID) !== storeId);
+      state.ledgerByStore[storeId] = { name: "No ledger", date: "" };
+      state.adminStoreFilter = storeId;
+      saveState();
+      renderAll();
+      switchTab("stores");
+      showToast(`Stock reset for ${storeLabel(storeId)}`);
+    }
+
+    function rowsToInventory(rows) {
+      if (!rows || !rows.length) return [];
+      const headerMap = buildHeaderMap(rows[0]);
+      const hasFixedColumns = rows.some((row) => row.length > LEDGER_COLUMNS.mrp.index);
+      const items = [];
+
+      rows.forEach((row, index) => {
+        if (!row || !row.length) return;
+        const fromHeader = !hasFixedColumns && Object.keys(headerMap).length;
+        const value = (key) => {
+          const colIndex = fromHeader ? headerMap[key] : LEDGER_COLUMNS[key].index;
+          return colIndex >= 0 ? clean(row[colIndex]) : "";
+        };
+        const article = value("article");
+        const closingStock = numeric(value("closingStock"));
+        if (index === 0 && looksLikeHeader(article, value("description"))) return;
+        if (!article || /total/i.test(article)) return;
+        if (!Number.isFinite(closingStock)) return;
+        items.push({
+          article,
+          description: value("description"),
+          colour: value("colour"),
+          year: value("year"),
+          group: value("group"),
+          size: value("size"),
+          closingStock,
+          mrp: numeric(value("mrp"))
+        });
+      });
+
+      return normaliseItems(items);
+    }
+
+    function buildHeaderMap(headerRow) {
+      const aliases = {
+        article: ["article", "articleno", "articlecode", "artcode", "art_code", "sku"],
+        description: ["description", "product", "itemname", "desc"],
+        colour: ["colour", "color", "colors", "shade"],
+        year: ["year", "artyr", "season"],
+        group: ["group", "group1", "department", "dept"],
+        size: ["size"],
+        closingStock: ["closingstock", "closing_stock", "stock", "qty", "quantity", "closing"],
+        mrp: ["mrp", "mrptotal", "price"]
+      };
+      const cleanHeaders = headerRow.map((cell) => clean(cell).toLowerCase().replace(/[^a-z0-9_]/g, ""));
+      const map = {};
+      Object.entries(aliases).forEach(([key, names]) => {
+        map[key] = cleanHeaders.findIndex((header) => names.includes(header));
+      });
+      return map;
+    }
+
+    function looksLikeHeader(article, description) {
+      return /article|art_?code/i.test(article) || /description/i.test(description);
+    }
+
+    function normaliseItems(items) {
+      const map = new Map();
+      items.forEach((item) => {
+        const cleaned = {
+          article: clean(item.article),
+          description: clean(item.description),
+          colour: clean(item.colour || item.color),
+          year: clean(item.year),
+          group: clean(item.group || item.department),
+          size: clean(item.size),
+          closingStock: numeric(item.closingStock),
+          mrp: numeric(item.mrp)
+        };
+        const split = splitArticleNumber(cleaned.article);
+        cleaned.baseArticle = clean(item.baseArticle) || split.baseArticle;
+        cleaned.shadeCode = clean(item.shadeCode) || split.shadeCode;
+        cleaned.articleSize = clean(item.articleSize) || split.articleSize;
+        if (!cleaned.article) return;
+        const key = [cleaned.article, cleaned.description, cleaned.colour, cleaned.year, cleaned.group, cleaned.size, cleaned.mrp].join("|").toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, cleaned);
+          return;
+        }
+        map.get(key).closingStock += cleaned.closingStock;
+      });
+      return Array.from(map.values()).sort((a, b) => a.article.localeCompare(b.article, undefined, { numeric: true, sensitivity: "base" }));
+    }
+
+    function splitArticleNumber(article) {
+      const parts = clean(article).split("-").map(clean).filter(Boolean);
+      if (parts.length >= 3) {
+        return {
+          baseArticle: parts.slice(0, -2).join("-"),
+          shadeCode: parts[parts.length - 2],
+          articleSize: parts[parts.length - 1]
+        };
+      }
+      return { baseArticle: clean(article), shadeCode: "", articleSize: "" };
+    }
+
+    function parseDelimited(text) {
+      const delimiter = detectDelimiter(text);
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let quote = false;
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        const next = text[i + 1];
+        if (char === '"' && quote && next === '"') {
+          cell += '"';
+          i += 1;
+        } else if (char === '"') {
+          quote = !quote;
+        } else if (!quote && char === delimiter) {
+          row.push(cell);
+          cell = "";
+        } else if (!quote && (char === "\n" || char === "\r")) {
+          if (char === "\r" && next === "\n") i += 1;
+          row.push(cell);
+          rows.push(row);
+          row = [];
+          cell = "";
+        } else {
+          cell += char;
+        }
+      }
+      row.push(cell);
+      if (row.some((value) => clean(value))) rows.push(row);
+      return rows;
+    }
+
+    function detectDelimiter(text) {
+      const line = text.split(/\r?\n/).find((item) => item.trim()) || "";
+      return [",", "\t", ";", "|"].map((delimiter) => ({ delimiter, count: line.split(delimiter).length })).sort((a, b) => b.count - a.count)[0].delimiter;
+    }
+
+    function parseXlsWorkbook(arrayBuffer) {
+      const bytes = new Uint8Array(arrayBuffer);
+      const ole = parseOle(bytes);
+      const stream = ole.stream("Workbook") || ole.stream("Book");
+      if (!stream) throw new Error("Workbook stream not found");
+      return parseBiffRows(stream);
+    }
+
+    function parseOle(bytes) {
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      const signature = "d0cf11e0a1b11ae1";
+      const actual = Array.from(bytes.slice(0, 8)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+      if (actual !== signature) throw new Error("Selected file is not an old Excel .xls workbook");
+      const sectorSize = 1 << view.getUint16(30, true);
+      const miniSectorSize = 1 << view.getUint16(32, true);
+      const firstDirSector = readSid(view, 48);
+      const miniCutoff = view.getUint32(56, true);
+      const firstMiniFatSector = readSid(view, 60);
+      const numMiniFatSectors = view.getUint32(64, true);
+      const firstDifatSector = readSid(view, 68);
+      const numDifatSectors = view.getUint32(72, true);
+      const difat = [];
+      for (let i = 0; i < 109; i += 1) {
+        const sid = readSid(view, 76 + i * 4);
+        if (sid >= 0) difat.push(sid);
+      }
+      let nextDifat = firstDifatSector;
+      for (let d = 0; d < numDifatSectors && nextDifat >= 0; d += 1) {
+        const offset = sectorOffset(nextDifat, sectorSize);
+        for (let i = 0; i < sectorSize / 4 - 1; i += 1) {
+          const sid = readSid(view, offset + i * 4);
+          if (sid >= 0) difat.push(sid);
+        }
+        nextDifat = readSid(view, offset + sectorSize - 4);
+      }
+      const fat = [];
+      difat.forEach((sid) => {
+        const offset = sectorOffset(sid, sectorSize);
+        for (let i = 0; i < sectorSize / 4; i += 1) fat.push(readSid(view, offset + i * 4));
+      });
+      const chain = (startSid) => {
+        const chunks = [];
+        let sid = startSid;
+        let guard = 0;
+        while (sid >= 0 && guard < fat.length + 4) {
+          const offset = sectorOffset(sid, sectorSize);
+          chunks.push(bytes.slice(offset, offset + sectorSize));
+          sid = fat[sid];
+          guard += 1;
+        }
+        return concatBytes(chunks);
+      };
+      const dirStream = chain(firstDirSector);
+      const dirs = [];
+      for (let offset = 0; offset + 128 <= dirStream.length; offset += 128) {
+        const entry = dirStream.slice(offset, offset + 128);
+        const nameLength = new DataView(entry.buffer, entry.byteOffset, entry.byteLength).getUint16(64, true);
+        if (!nameLength) continue;
+        const name = decodeUtf16(entry.slice(0, Math.max(0, nameLength - 2)));
+        const type = entry[66];
+        const startSid = readSid(new DataView(entry.buffer, entry.byteOffset, entry.byteLength), 116);
+        const size = new DataView(entry.buffer, entry.byteOffset, entry.byteLength).getUint32(120, true);
+        dirs.push({ name, type, startSid, size });
+      }
+      const root = dirs.find((dir) => dir.type === 5);
+      const miniFat = [];
+      if (numMiniFatSectors && firstMiniFatSector >= 0) {
+        const miniFatStream = chain(firstMiniFatSector);
+        for (let i = 0; i + 4 <= miniFatStream.length; i += 4) miniFat.push(readSid(new DataView(miniFatStream.buffer, miniFatStream.byteOffset, miniFatStream.byteLength), i));
+      }
+      const miniStream = root && root.startSid >= 0 ? chain(root.startSid) : new Uint8Array();
+      const miniChain = (startMiniSid) => {
+        const chunks = [];
+        let sid = startMiniSid;
+        let guard = 0;
+        while (sid >= 0 && guard < miniFat.length + 4) {
+          const offset = sid * miniSectorSize;
+          chunks.push(miniStream.slice(offset, offset + miniSectorSize));
+          sid = miniFat[sid];
+          guard += 1;
+        }
+        return concatBytes(chunks);
+      };
+      return {
+        stream(name) {
+          const dir = dirs.find((item) => item.name === name);
+          if (!dir) return null;
+          const data = dir.size < miniCutoff && dir.type === 2 ? miniChain(dir.startSid) : chain(dir.startSid);
+          return data.slice(0, dir.size);
+        }
+      };
+    }
+
+    function parseBiffRows(stream) {
+      const view = new DataView(stream.buffer, stream.byteOffset, stream.byteLength);
+      const sharedStrings = [];
+      const sheets = [];
+      let offset = 0;
+      while (offset + 4 <= stream.length) {
+        const type = view.getUint16(offset, true);
+        const length = view.getUint16(offset + 2, true);
+        const dataStart = offset + 4;
+        const dataEnd = dataStart + length;
+        if (type === 0x0085) sheets.push(parseBoundSheet(stream.slice(dataStart, dataEnd)));
+        if (type === 0x00fc) {
+          const segments = [stream.slice(dataStart, dataEnd)];
+          let next = dataEnd;
+          while (next + 4 <= stream.length && view.getUint16(next, true) === 0x003c) {
+            const contLength = view.getUint16(next + 2, true);
+            segments.push(stream.slice(next + 4, next + 4 + contLength));
+            next += 4 + contLength;
+          }
+          sharedStrings.splice(0, sharedStrings.length, ...parseSst(segments));
+        }
+        offset = dataEnd;
+        if (sheets.length && type === 0x0809 && offset > sheets[0].offset) break;
+      }
+      const sheetOffset = sheets[0]?.offset || 0;
+      const rows = [];
+      offset = sheetOffset;
+      let pendingFormula = null;
+      while (offset + 4 <= stream.length) {
+        const type = view.getUint16(offset, true);
+        const length = view.getUint16(offset + 2, true);
+        const dataStart = offset + 4;
+        const data = stream.slice(dataStart, dataStart + length);
+        if (type === 0x000a) break;
+        if (type === 0x00fd) {
+          const dv = dataView(data);
+          setCell(rows, dv.getUint16(0, true), dv.getUint16(2, true), sharedStrings[dv.getUint32(6, true)] || "");
+        } else if (type === 0x0203) {
+          const dv = dataView(data);
+          setCell(rows, dv.getUint16(0, true), dv.getUint16(2, true), dv.getFloat64(6, true));
+        } else if (type === 0x027e) {
+          const dv = dataView(data);
+          setCell(rows, dv.getUint16(0, true), dv.getUint16(2, true), decodeRk(dv.getUint32(6, true)));
+        } else if (type === 0x00bd) {
+          const dv = dataView(data);
+          const row = dv.getUint16(0, true);
+          const firstCol = dv.getUint16(2, true);
+          const lastCol = dv.getUint16(data.length - 2, true);
+          for (let col = firstCol; col <= lastCol; col += 1) {
+            const itemOffset = 4 + (col - firstCol) * 6;
+            setCell(rows, row, col, decodeRk(dv.getUint32(itemOffset + 2, true)));
+          }
+        } else if (type === 0x0204) {
+          const dv = dataView(data);
+          setCell(rows, dv.getUint16(0, true), dv.getUint16(2, true), readInlineString(data, 6));
+        } else if (type === 0x0205) {
+          const dv = dataView(data);
+          setCell(rows, dv.getUint16(0, true), dv.getUint16(2, true), dv.getUint8(6) ? "TRUE" : "FALSE");
+        } else if (type === 0x0006) {
+          const dv = dataView(data);
+          const row = dv.getUint16(0, true);
+          const col = dv.getUint16(2, true);
+          const marker = dv.getUint16(6, true);
+          if (marker === 0xffff) pendingFormula = { row, col };
+          else setCell(rows, row, col, dv.getFloat64(6, true));
+        } else if (type === 0x0207 && pendingFormula) {
+          setCell(rows, pendingFormula.row, pendingFormula.col, readInlineString(data, 0));
+          pendingFormula = null;
+        }
+        offset += 4 + length;
+      }
+      return rows;
+    }
+
+    function parseBoundSheet(data) {
+      const dv = dataView(data);
+      const offset = dv.getUint32(0, true);
+      const nameLen = dv.getUint8(6);
+      const flags = dv.getUint8(7);
+      const highByte = flags & 1;
+      let name = "";
+      let pos = 8;
+      for (let i = 0; i < nameLen; i += 1) {
+        name += String.fromCharCode(highByte ? dv.getUint16(pos + i * 2, true) : dv.getUint8(pos + i));
+      }
+      return { offset, name };
+    }
+
+    function parseSst(segments) {
+      const reader = new SegmentReader(segments);
+      reader.u32();
+      const uniqueCount = reader.u32();
+      const strings = [];
+      for (let i = 0; i < uniqueCount && !reader.done(); i += 1) {
+        strings.push(reader.string());
+      }
+      return strings;
+    }
+
+    class SegmentReader {
+      constructor(segments) {
+        this.segments = segments;
+        this.segment = 0;
+        this.pos = 0;
+      }
+      current() {
+        return this.segments[this.segment] || new Uint8Array();
+      }
+      done() {
+        return this.segment >= this.segments.length;
+      }
+      ensure() {
+        while (!this.done() && this.pos >= this.current().length) {
+          this.segment += 1;
+          this.pos = 0;
+        }
+      }
+      byte() {
+        this.ensure();
+        if (this.done()) return 0;
+        return this.current()[this.pos++];
+      }
+      u16() {
+        const a = this.byte();
+        const b = this.byte();
+        return a | (b << 8);
+      }
+      u32() {
+        return this.u16() | (this.u16() << 16);
+      }
+      string() {
+        const length = this.u16();
+        let flags = this.byte();
+        const rich = flags & 0x08 ? this.u16() : 0;
+        const ext = flags & 0x04 ? this.u32() : 0;
+        let highByte = flags & 1;
+        let text = "";
+        for (let i = 0; i < length; i += 1) {
+          if (this.pos >= this.current().length) {
+            this.segment += 1;
+            this.pos = 0;
+            if (this.done()) break;
+            flags = this.byte();
+            highByte = flags & 1;
+          }
+          if (highByte) {
+            const lo = this.byte();
+            const hi = this.byte();
+            text += String.fromCharCode(lo | (hi << 8));
+          } else {
+            text += String.fromCharCode(this.byte());
+          }
+        }
+        for (let i = 0; i < rich * 4; i += 1) this.byte();
+        for (let i = 0; i < ext; i += 1) this.byte();
+        return text;
+      }
+    }
+
+    function readInlineString(data, offset) {
+      const dv = dataView(data);
+      if (offset + 3 > data.length) return "";
+      const length = dv.getUint16(offset, true);
+      const flags = dv.getUint8(offset + 2);
+      let pos = offset + 3;
+      if (flags & 0x08) pos += 2;
+      if (flags & 0x04) pos += 4;
+      let text = "";
+      for (let i = 0; i < length && pos < data.length; i += 1) {
+        if (flags & 1) {
+          text += String.fromCharCode(dv.getUint16(pos, true));
+          pos += 2;
+        } else {
+          text += String.fromCharCode(dv.getUint8(pos));
+          pos += 1;
+        }
+      }
+      return text;
+    }
+
+    function decodeRk(rk) {
+      const divided = rk & 1;
+      const isInteger = rk & 2;
+      let value;
+      if (isInteger) {
+        value = rk >> 2;
+      } else {
+        const buffer = new ArrayBuffer(8);
+        const view = new DataView(buffer);
+        view.setUint32(4, rk & 0xfffffffc, true);
+        value = view.getFloat64(0, true);
+      }
+      return divided ? value / 100 : value;
+    }
+
+    function setCell(rows, row, col, value) {
+      if (!rows[row]) rows[row] = [];
+      rows[row][col] = value;
+    }
+
+    function readSid(view, offset) {
+      const value = view.getUint32(offset, true);
+      return value >= 0xfffffffa ? -1 : value;
+    }
+
+    function sectorOffset(sid, sectorSize) {
+      return (sid + 1) * sectorSize;
+    }
+
+    function concatBytes(chunks) {
+      const length = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const output = new Uint8Array(length);
+      let offset = 0;
+      chunks.forEach((chunk) => {
+        output.set(chunk, offset);
+        offset += chunk.length;
+      });
+      return output;
+    }
+
+    function dataView(bytes) {
+      return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    }
+
+    function decodeUtf16(bytes) {
+      let text = "";
+      const view = dataView(bytes);
+      for (let i = 0; i + 1 < bytes.length; i += 2) text += String.fromCharCode(view.getUint16(i, true));
+      return text;
+    }
+
+    function exportSummary() {
+      const rows = [["Store", "Group", "Qty", "Articles", "Shades", "Sizes"]];
+      const totals = new Map();
+      selectedInventory().forEach((item) => {
+        const group = item.group || "N.A.";
+        const key = `${item.storeId}|${group}`;
+        if (!totals.has(key)) totals.set(key, { storeName: item.storeName || storeLabel(item.storeId), group, qty: 0, articles: new Set(), shades: new Set(), sizes: new Set() });
+        const total = totals.get(key);
+        total.qty += numeric(item.closingStock);
+        total.articles.add(item.baseArticle || item.article);
+        if (item.shadeCode) total.shades.add(item.shadeCode);
+        if (item.size) total.sizes.add(item.size);
+      });
+      Array.from(totals.values()).forEach((total) => rows.push([total.storeName, total.group, total.qty, total.articles.size, total.shades.size, total.sizes.size]));
+      downloadCsv("admin-group-summary.csv", rows);
+    }
+
+    function exportCounts() {
+      const rows = [["Store", "Date", "Group", "Ledger Qty", "Physical Qty", "Variance", "Staff", "Status", "Note"]]
+        .concat(state.globalCounts.filter((report) => storeRecordMatches(report)).map((report) => [report.storeName || storeLabel(report.storeId || DEFAULT_STORE_ID), report.date, report.group, report.ledgerQty, report.countedQty, report.variance, report.staffName, report.status, report.note || ""]));
+      downloadCsv("admin-global-counts.csv", rows);
+    }
+
+    function exportAudit() {
+      const rows = [["Store", "Report", "Scope", "Article", "Description", "Group", "Ledger Qty", "Counted Qty", "Variance", "Status", "Staff", "Counted At"]]
+        .concat(state.audits.filter((audit) => storeRecordMatches(audit)).flatMap((audit) => {
+          const summary = auditSummary(audit);
+          return auditItems(audit).map((item) => [audit.storeName || storeLabel(audit.storeId || DEFAULT_STORE_ID), audit.article || "Audit Report", audit.scope || audit.staffDepartment || audit.group || "", item.article, item.description, item.group, item.ledgerQty, item.countedQty, item.variance, item.status || summary.status, audit.staffName || item.staffName, audit.submittedAt || item.countedAt]);
+        }));
+      downloadCsv("admin-audit-register.csv", rows);
+    }
+
+    function downloadCsv(filename, rows) {
+      const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast(`${filename} downloaded`);
+    }
+
+    function csvCell(value) {
+      const text = String(value ?? "");
+      return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    }
+
+    function staffDepartments(staff) {
+      if (!staff) return [];
+      if (Array.isArray(staff.departments)) return staff.departments.map(clean).filter(Boolean);
+      return clean(staff.department).split(",").map(clean).filter(Boolean);
+    }
+
+    function staffDepartmentLabel(staff) {
+      const departments = staffDepartments(staff);
+      return departments.length ? departments.join(", ") : "No department";
+    }
+
+    function clean(value) {
+      return String(value ?? "").trim();
+    }
+
+    function codeKey(value) {
+      return clean(value).toLowerCase().replace(/\s+/g, "");
+    }
+
+    function phoneKey(value) {
+      const digits = String(value ?? "").replace(/\D/g, "");
+      if (digits) return digits.length > 10 ? digits.slice(-10) : digits;
+      return clean(value).toLowerCase();
+    }
+
+    function numeric(value) {
+      if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+      const parsed = Number(String(value ?? "").replace(/,/g, "").trim());
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function unique(values) {
+      return Array.from(new Set(values.map(clean).filter(Boolean))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(numeric(value));
+    }
+
+    function signed(value) {
+      const qty = numeric(value);
+      return qty > 0 ? `+${formatNumber(qty)}` : formatNumber(qty);
+    }
+
+    function uid() {
+      return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => els.toast.classList.remove("show"), 2200);
+    }
+  </script>
+</body>
+</html>
