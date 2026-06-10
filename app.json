@@ -49,9 +49,6 @@
     "web": {
       "bundler": "metro",
       "output": "static"
-    },
-    "experiments": {
-      "typedRoutes": true
     }
   }
 }
