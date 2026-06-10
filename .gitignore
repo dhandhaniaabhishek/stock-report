@@ -9,3 +9,4 @@ expo-env.d.ts
 .env.local
 .env.production
 .env.development
+web-build/
