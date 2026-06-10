@@ -49,6 +49,9 @@
     "web": {
       "bundler": "metro",
       "output": "static"
+    },
+    "experiments": {
+      "baseUrl": "/stock-report"
     }
   }
 }
