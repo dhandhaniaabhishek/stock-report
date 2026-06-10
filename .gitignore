@@ -10,3 +10,4 @@ expo-env.d.ts
 .env.production
 .env.development
 web-build/
+node_modules/
