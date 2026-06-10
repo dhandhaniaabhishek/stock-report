@@ -596,19 +596,23 @@ function BackupTab({ onNotice }: { onNotice: (value: string) => void }) {
   };
 
   const restoreFromCloud = async () => {
-    if (cloudBusy) return;
-    confirm("Restore Firebase backup?", async () => {
-      setCloudBusy("restore");
-      try {
-        const at = await actions.restoreCloudBackup({ email: cloudEmail, password: cloudPassword });
-        onNotice(`Firebase backup restored: ${dateLabel(at)}.`);
-      } catch (error) {
-        onNotice(error instanceof Error ? error.message : "Firebase restore failed.");
-      } finally {
-        setCloudBusy("");
-      }
+  if (cloudBusy) return;
+
+  setCloudBusy("restore");
+
+  try {
+    const at = await actions.restoreCloudBackup({
+      email: cloudEmail,
+      password: cloudPassword,
     });
-  };
+
+    onNotice(`Firebase backup restored: ${dateLabel(at)}.`);
+  } catch (error) {
+    onNotice(error instanceof Error ? error.message : "Firebase restore failed.");
+  } finally {
+    setCloudBusy("");
+  }
+};
 
   return (
     <View style={{ gap: 12 }}>
