@@ -11,3 +11,7 @@ expo-env.d.ts
 .env.development
 web-build/
 node_modules/
+.expo/
+*.log
+.expo-export-check/
+web-build/
