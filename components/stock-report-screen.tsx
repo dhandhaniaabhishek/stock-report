@@ -572,60 +572,58 @@ function BackupTab({ onNotice }: { onNotice: (value: string) => void }) {
   if (typeof window === "undefined") return "";
   return localStorage.getItem("stock-report-firebase-email") || "";
 });
-
 const [cloudPassword, setCloudPassword] = useState(() => {
   if (typeof window === "undefined") return "";
   return localStorage.getItem("stock-report-firebase-password") || "";
 });
-  const [cloudBusy, setCloudBusy] = useState<"save" | "restore" | "save-live" | "restore-live" | "">("");
-  const [autoLiveSync, setAutoLiveSync] = useState(false);
+const [cloudBusy, setCloudBusy] = useState<"save" | "restore" | "save-live" | "restore-live" | "">("");
+const [autoLiveSync, setAutoLiveSync] = useState(false);
+const [autoLiveRestore, setAutoLiveRestore] = useState(false);
 const [lastSyncAt, setLastSyncAt] = useState("");
 const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "error">("idle");
+
+// Save credentials to localStorage whenever they change
 useEffect(() => {
   if (typeof window === "undefined") return;
   localStorage.setItem("stock-report-firebase-email", cloudEmail);
   localStorage.setItem("stock-report-firebase-password", cloudPassword);
 }, [cloudEmail, cloudPassword]);
-  useEffect(() => {
+
+// Auto live sync
+useEffect(() => {
   if (!autoLiveSync) return;
   if (!cloudEmail || !cloudPassword) return;
 
   const timer = setInterval(async () => {
     try {
-      await actions.saveCloudLive({
-        email: cloudEmail,
-        password: cloudPassword,
-      });
-
+      await actions.saveCloudLive({ email: cloudEmail, password: cloudPassword });
       console.log("Auto live sync completed");
+      setLastSyncAt(new Date().toISOString());
     } catch (error) {
       console.error("Auto live sync failed", error);
     }
-  }, 30000);
+  }, 30000); // every 30 seconds
 
   return () => clearInterval(timer);
-}, [
-  autoLiveSync,
-  cloudEmail,
-  cloudPassword,
-  actions,
-]);
-  useEffect(() => {
-  if (!autoLiveSync) return;
+}, [autoLiveSync, cloudEmail, cloudPassword]);
+
+// Auto live restore
+useEffect(() => {
+  if (!autoLiveRestore) return;
+  if (!cloudEmail || !cloudPassword) return;
 
   const timer = setInterval(async () => {
     try {
-      await actions.saveCloudLive({
-        email: cloudEmail,
-        password: cloudPassword,
-      });
-    } catch {
-      // ignore background sync errors
+      await actions.restoreCloudLive({ email: cloudEmail, password: cloudPassword });
+      console.log("Auto live restore completed");
+      setLastSyncAt(new Date().toISOString());
+    } catch (error) {
+      console.error("Auto live restore failed", error);
     }
-  }, 30000); // 5 minutes
+  }, 60000); // every 60 seconds, adjust as needed
 
   return () => clearInterval(timer);
-}, [autoLiveSync, cloudEmail, cloudPassword, actions]);
+}, [autoLiveRestore, cloudEmail, cloudPassword]);
   const firebaseReady = actions.firebaseBackupReady();
   const backups = stockSelectors.exportBackups();
 
