@@ -28,6 +28,7 @@ type FirebaseAuthResponse = {
 };
 
 const DEFAULT_BACKUP_PATH = "stock-report/main/backup";
+const DEFAULT_LIVE_PATH = "stock-report-live";
 const AUTH_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword";
 
 export function firebaseBackupConfig(): FirebaseBackupConfig | null {
@@ -43,7 +44,10 @@ export function firebaseConfigured() {
   return Boolean(firebaseBackupConfig());
 }
 
-export async function saveFirebaseBackup(snapshot: Partial<StockLedgerState>, login: FirebaseLogin) {
+export async function saveFirebaseBackup(
+  snapshot: Partial<StockLedgerState>,
+  login: FirebaseLogin
+) {
   const config = requireConfig();
   const auth = await signIn(config, login);
 
@@ -62,24 +66,38 @@ export async function saveFirebaseBackup(snapshot: Partial<StockLedgerState>, lo
 
   return payload;
 }
-
-export async function loadFirebaseBackup(login: FirebaseLogin) {
+export async function saveFirebaseLive(snapshot: Partial<StockLedgerState>, login: FirebaseLogin) {
   const config = requireConfig();
   const auth = await signIn(config, login);
 
-  const payload = await firebaseRequest<FirebaseBackupPayload | null>(
-    config,
-    `${config.backupPath}.json`,
-    auth.idToken
-  );
+  await firebaseRequest(config, `${DEFAULT_LIVE_PATH}.json`, auth.idToken, {
+    method: "PUT",
+    body: JSON.stringify({
+      app: "stock-ledger-live",
+      schemaVersion: 1,
+      updatedAt: new Date().toISOString(),
+      data: snapshot
+    })
+  });
+}
 
-  if (!payload || payload.app !== "stock-ledger" || !payload.data) {
-    throw new Error("No valid Firebase backup found.");
+export async function loadFirebaseLive(login: FirebaseLogin) {
+  const config = requireConfig();
+  const auth = await signIn(config, login);
+
+  const payload = await firebaseRequest<{
+    app?: string;
+    schemaVersion?: number;
+    updatedAt?: string;
+    data?: Partial<StockLedgerState>;
+  } | null>(config, `${DEFAULT_LIVE_PATH}.json`, auth.idToken);
+
+  if (!payload || !payload.data) {
+    throw new Error("No valid Firebase live data found.");
   }
 
   return payload;
 }
-
 async function signIn(config: FirebaseBackupConfig, login: FirebaseLogin) {
   const email = cleanEnv(login.email);
   const password = cleanEnv(login.password);
