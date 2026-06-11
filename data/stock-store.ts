@@ -14,7 +14,14 @@ import {
   rowsToInventory,
   rowsToScanEntries
 } from "@/data/csv";
-import { firebaseConfigured, loadFirebaseBackup, saveFirebaseBackup, type FirebaseLogin } from "@/data/firebase-backup";
+import {
+  firebaseConfigured,
+  loadFirebaseBackup,
+  loadFirebaseLive,
+  saveFirebaseBackup,
+  saveFirebaseLive,
+  type FirebaseLogin
+} from "@/data/firebase-backup";
 import { adminUser, createDemoState, defaultRights, defaultStore, DEFAULT_STORE_ID, DEMO_LEDGER_NAME } from "@/data/seed";
 import type {
   AuditLine,
@@ -100,8 +107,10 @@ export const stockActions = {
   refreshFromStorage,
   removeArticlePhoto,
   restoreCloudBackup,
+  restoreCloudLive,
   saveArticlePhoto,
   saveCloudBackup,
+  saveCloudLive,
   selectStore,
   selectStoreForAdmin,
   sendMessage,
@@ -740,6 +749,22 @@ async function restoreCloudBackup(login: FirebaseLogin) {
   const sessionId = snapshot.currentUserId;
   commit(normaliseState({ ...payload.data, currentUserId: sessionId }));
   return payload.exportedAt;
+}
+
+async function saveCloudLive(login: FirebaseLogin) {
+  await saveFirebaseLive(compactStateForStorage(snapshot), login);
+  return new Date().toISOString();
+}
+
+async function restoreCloudLive(login: FirebaseLogin) {
+  const payload = await loadFirebaseLive(login);
+  if (!payload.data) {
+    throw new Error("No valid Firebase live data found.");
+  }
+
+  const sessionId = snapshot.currentUserId;
+  commit(normaliseState({ ...payload.data, currentUserId: sessionId }));
+  return payload.updatedAt || new Date().toISOString();
 }
 
 function exportStockCsvText(storeId = snapshot.adminStoreFilter || snapshot.currentStoreId) {
