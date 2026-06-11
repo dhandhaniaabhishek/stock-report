@@ -582,10 +582,7 @@ const [autoLiveSync, setAutoLiveSync] = useState(() => {
   return localStorage.getItem("stock-report-auto-sync") === "true";
 });
 
-const [autoLiveRestore, setAutoLiveRestore] = useState(() => {
-  if (typeof window === "undefined") return false;
-  return localStorage.getItem("stock-report-auto-restore") === "true";
-});
+const [autoLiveRestore, setAutoLiveRestore] = useState(false);
 const [lastSyncAt, setLastSyncAt] = useState("");
 const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "error">("idle");
 
@@ -595,9 +592,8 @@ useEffect(() => {
 
   localStorage.setItem("stock-report-firebase-email", cloudEmail);
   localStorage.setItem("stock-report-firebase-password", cloudPassword);
-
   localStorage.setItem("stock-report-auto-sync", String(autoLiveSync));
-  localStorage.setItem("stock-report-auto-restore", String(autoLiveRestore));
+
 }, [cloudEmail, cloudPassword, autoLiveSync, autoLiveRestore]);
 // Auto live sync
 useEffect(() => {
