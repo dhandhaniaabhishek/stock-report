@@ -577,18 +577,28 @@ const [cloudPassword, setCloudPassword] = useState(() => {
   return localStorage.getItem("stock-report-firebase-password") || "";
 });
 const [cloudBusy, setCloudBusy] = useState<"save" | "restore" | "save-live" | "restore-live" | "">("");
-const [autoLiveSync, setAutoLiveSync] = useState(false);
-const [autoLiveRestore, setAutoLiveRestore] = useState(true);
+const [autoLiveSync, setAutoLiveSync] = useState(() => {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem("stock-report-auto-sync") === "true";
+});
+
+const [autoLiveRestore, setAutoLiveRestore] = useState(() => {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem("stock-report-auto-restore") === "true";
+});
 const [lastSyncAt, setLastSyncAt] = useState("");
 const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "error">("idle");
 
 // Save credentials to localStorage whenever they change
 useEffect(() => {
   if (typeof window === "undefined") return;
+
   localStorage.setItem("stock-report-firebase-email", cloudEmail);
   localStorage.setItem("stock-report-firebase-password", cloudPassword);
-}, [cloudEmail, cloudPassword]);
 
+  localStorage.setItem("stock-report-auto-sync", String(autoLiveSync));
+  localStorage.setItem("stock-report-auto-restore", String(autoLiveRestore));
+}, [cloudEmail, cloudPassword, autoLiveSync, autoLiveRestore]);
 // Auto live sync
 useEffect(() => {
   if (!autoLiveSync) return;
@@ -602,11 +612,10 @@ useEffect(() => {
     } catch (error) {
       console.error("Auto live sync failed", error);
     }
-  }, 30000); // every 30 seconds
+  }, 30000);
 
   return () => clearInterval(timer);
 }, [autoLiveSync, cloudEmail, cloudPassword]);
-
 // Auto live restore
 useEffect(() => {
   if (!autoLiveRestore) return;
@@ -620,7 +629,7 @@ useEffect(() => {
     } catch (error) {
       console.error("Auto live restore failed", error);
     }
-  }, 60000); // every 60 seconds, adjust as needed
+  }, 30000);
 
   return () => clearInterval(timer);
 }, [autoLiveRestore, cloudEmail, cloudPassword]);
