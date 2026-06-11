@@ -578,7 +578,7 @@ const [cloudPassword, setCloudPassword] = useState(() => {
 });
 const [cloudBusy, setCloudBusy] = useState<"save" | "restore" | "save-live" | "restore-live" | "">("");
 const [autoLiveSync, setAutoLiveSync] = useState(false);
-const [autoLiveRestore, setAutoLiveRestore] = useState(false);
+const [autoLiveRestore, setAutoLiveRestore] = useState(true);
 const [lastSyncAt, setLastSyncAt] = useState("");
 const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "error">("idle");
 
