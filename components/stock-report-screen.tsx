@@ -718,6 +718,10 @@ useEffect(() => {
   label={autoLiveSync ? "Auto Live Sync: ON" : "Auto Live Sync: OFF"}
   onPress={() => setAutoLiveSync(!autoLiveSync)}
 />
+<ActionButton
+  label={autoLiveRestore ? "Auto Restore Live: ON" : "Auto Restore Live: OFF"}
+  onPress={() => setAutoLiveRestore(!autoLiveRestore)}
+/>
         </View>
       </Panel>
 
