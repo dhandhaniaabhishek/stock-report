@@ -541,11 +541,18 @@ function upsertStaff(input: StaffInput) {
 }
 
 function deleteStaff(id: string) {
-  if (!hasRight("canManageStaff") && !isAdmin()) throw new Error("Staff management rights required.");
-  if (id === "admin") throw new Error("Default admin cannot be deleted.");
+  if (!hasRight("canManageStaff") && !isAdmin()) {
+    throw new Error("Staff management rights required.");
+  }
+
+  if (id === "admin") {
+    throw new Error("Default admin cannot be deleted.");
+  }
+
   commit({
     ...snapshot,
-    staff: snapshot.staff.map((staff) => staff.id === id ? { ...staff, active: false } : staff),
+    staff: snapshot.staff.filter((staff) => staff.id !== id),
+    currentUserId: snapshot.currentUserId === id ? "" : snapshot.currentUserId,
     updatedAt: new Date().toISOString()
   });
 }
