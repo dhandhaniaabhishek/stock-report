@@ -577,10 +577,7 @@ const [cloudPassword, setCloudPassword] = useState(() => {
   return localStorage.getItem("stock-report-firebase-password") || "";
 });
 const [cloudBusy, setCloudBusy] = useState<"save" | "restore" | "save-live" | "restore-live" | "">("");
-const [autoLiveSync, setAutoLiveSync] = useState(() => {
-  if (typeof window === "undefined") return false;
-  return localStorage.getItem("stock-report-auto-sync") === "true";
-});
+const [autoLiveSync, setAutoLiveSync] = useState(false);
 
 const [autoLiveRestore, setAutoLiveRestore] = useState(false);
 const [lastSyncAt, setLastSyncAt] = useState("");
@@ -1118,7 +1115,24 @@ function StaffRow({ staff, onEdit, onNotice }: { staff: Staff; onEdit: () => voi
       <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
         <ActionButton label="Edit" onPress={onEdit} />
         <ActionButton label={staff.approved === false ? "Approve" : "Pending"} onPress={() => actions.updateStaffApproval(staff.id, staff.approved === false)} />
-        {staff.id !== "admin" ? <ActionButton label="Delete" tone="danger" onPress={() => confirm("Delete employee?", () => { actions.deleteStaff(staff.id); onNotice("Employee deleted."); })} /> : null}
+        {staff.id !== "admin" ? (
+  <ActionButton
+    label="Delete"
+    tone="danger"
+    onPress={() => {
+      const ok =
+        typeof window !== "undefined"
+          ? window.confirm("Delete employee?")
+          : true;
+
+      if (!ok) return;
+
+      actions.deleteStaff(staff.id);
+      onNotice("Employee deleted. Go to Backup and click Save Live Data.");
+    }}
+  />
+) : null}
+
       </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         {rightLabels.map((right) => (
