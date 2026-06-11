@@ -570,7 +570,7 @@ function BackupTab({ onNotice }: { onNotice: (value: string) => void }) {
   const [exportText, setExportText] = useState("");
   const [cloudEmail, setCloudEmail] = useState("");
   const [cloudPassword, setCloudPassword] = useState("");
-  const [cloudBusy, setCloudBusy] = useState<"save" | "restore" | "">("");
+  const [cloudBusy, setCloudBusy] = useState<"save" | "restore" | "save-live" | "restore-live" | "">("");
   const firebaseReady = actions.firebaseBackupReady();
   const backups = stockSelectors.exportBackups();
 
@@ -583,82 +583,60 @@ function BackupTab({ onNotice }: { onNotice: (value: string) => void }) {
   };
 
   const saveToCloud = async () => {
-  if (cloudBusy) return;
+    if (cloudBusy) return;
+    setCloudBusy("save");
 
-  setCloudBusy("save");
+    try {
+      const at = await actions.saveCloudBackup({ email: cloudEmail, password: cloudPassword });
+      onNotice(`Firebase backup saved: ${dateLabel(at)}.`);
+    } catch (error) {
+      onNotice(error instanceof Error ? error.message : "Firebase backup failed.");
+    } finally {
+      setCloudBusy("");
+    }
+  };
 
-  try {
-    const at = await actions.saveCloudBackup({
-      email: cloudEmail,
-      password: cloudPassword,
-    });
+  const restoreFromCloud = async () => {
+    if (cloudBusy) return;
+    setCloudBusy("restore");
 
-    onNotice(`Firebase backup saved: ${dateLabel(at)}.`);
-  } catch (error) {
-    onNotice(error instanceof Error ? error.message : "Firebase backup failed.");
-  } finally {
-    setCloudBusy("");
-  }
-};
+    try {
+      const at = await actions.restoreCloudBackup({ email: cloudEmail, password: cloudPassword });
+      onNotice(`Firebase backup restored: ${dateLabel(at)}.`);
+    } catch (error) {
+      onNotice(error instanceof Error ? error.message : "Firebase restore failed.");
+    } finally {
+      setCloudBusy("");
+    }
+  };
 
-const restoreFromCloud = async () => {
-  if (cloudBusy) return;
+  const saveLiveToCloud = async () => {
+    if (cloudBusy) return;
+    setCloudBusy("save-live");
 
-  setCloudBusy("restore");
+    try {
+      const at = await actions.saveCloudLive({ email: cloudEmail, password: cloudPassword });
+      onNotice(`Live data saved: ${dateLabel(at)}.`);
+    } catch (error) {
+      onNotice(error instanceof Error ? error.message : "Live save failed.");
+    } finally {
+      setCloudBusy("");
+    }
+  };
 
-  try {
-    const at = await actions.restoreCloudBackup({
-      email: cloudEmail,
-      password: cloudPassword,
-    });
-
-    onNotice(`Firebase backup restored: ${dateLabel(at)}.`);
-  } catch (error) {
-    onNotice(error instanceof Error ? error.message : "Firebase restore failed.");
-  } finally {
-    setCloudBusy("");
-  }
-};
-
-const saveLiveToCloud = async () => {
-  if (cloudBusy) return;
-
-  setCloudBusy("save-live");
-
-  try {
-    const at = await actions.saveCloudLive({
-      email: cloudEmail,
-      password: cloudPassword,
-    });
-
-    onNotice(`Live data saved: ${dateLabel(at)}.`);
-  } catch (error) {
-    onNotice(error instanceof Error ? error.message : "Live save failed.");
-  } finally {
-    setCloudBusy("");
-  }
-};
-
-const restoreLiveFromCloud = async () => {
-  if (cloudBusy) return;
-
-  confirm("Restore Firebase live data?", async () => {
+  const restoreLiveFromCloud = async () => {
+    if (cloudBusy) return;
     setCloudBusy("restore-live");
 
     try {
-      const at = await actions.restoreCloudLive({
-        email: cloudEmail,
-        password: cloudPassword,
-      });
-
+      const at = await actions.restoreCloudLive({ email: cloudEmail, password: cloudPassword });
       onNotice(`Live data restored: ${dateLabel(at)}.`);
     } catch (error) {
       onNotice(error instanceof Error ? error.message : "Live restore failed.");
     } finally {
       setCloudBusy("");
     }
-  });
-};
+  };
 
   return (
     <View style={{ gap: 12 }}>
@@ -668,37 +646,24 @@ const restoreLiveFromCloud = async () => {
           <ActionButton label="Restore Backup" onPress={restorePicked} />
         </View>
       </Panel>
+
       <Panel title="Firebase Cloud Backup">
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
           <Badge label={firebaseReady ? "Configured" : "Not Configured"} tone={firebaseReady ? "good" : "warn"} />
           <Text selectable style={rowSub}>{firebaseReady ? "Cloud backup is ready." : "Add Firebase values in .env first."}</Text>
         </View>
+
         <TextInput value={cloudEmail} onChangeText={setCloudEmail} autoCapitalize="none" keyboardType="email-address" placeholder="Firebase email" placeholderTextColor={colors.muted} style={inputStyle} />
         <TextInput value={cloudPassword} onChangeText={setCloudPassword} secureTextEntry placeholder="Firebase password" placeholderTextColor={colors.muted} style={inputStyle} />
+
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-  <ActionButton
-    label={cloudBusy === "save" ? "Saving..." : "Save Backup"}
-    tone="primary"
-    onPress={saveToCloud}
-  />
-
-  <ActionButton
-    label={cloudBusy === "restore" ? "Restoring..." : "Restore Backup"}
-    onPress={restoreFromCloud}
-  />
-
-  <ActionButton
-    label={cloudBusy === "save-live" ? "Saving..." : "Save Live Data"}
-    tone="primary"
-    onPress={saveLiveToCloud}
-  />
-
-  <ActionButton
-    label={cloudBusy === "restore-live" ? "Restoring..." : "Restore Live Data"}
-    onPress={restoreLiveFromCloud}
-  />
-</View>
+          <ActionButton label={cloudBusy === "save" ? "Saving..." : "Save Backup"} tone="primary" onPress={saveToCloud} />
+          <ActionButton label={cloudBusy === "restore" ? "Restoring..." : "Restore Backup"} onPress={restoreFromCloud} />
+          <ActionButton label={cloudBusy === "save-live" ? "Saving..." : "Save Live Data"} tone="primary" onPress={saveLiveToCloud} />
+          <ActionButton label={cloudBusy === "restore-live" ? "Restoring..." : "Restore Live Data"} onPress={restoreLiveFromCloud} />
+        </View>
       </Panel>
+
       <Panel title="Saved Backup List">
         {backups.length ? backups.map((backup, index) => (
           <View key={`${backup.at}-${index}`} style={rowStyle}>
@@ -710,6 +675,7 @@ const restoreLiveFromCloud = async () => {
           </View>
         )) : <EmptyState title="No backup saved" detail="Use Export Backup to keep a file copy outside browser storage." />}
       </Panel>
+
       {exportText ? <ExportBox value={exportText} /> : null}
     </View>
   );
