@@ -568,10 +568,22 @@ function MessagesAdminTab({ onNotice, isWide }: { onNotice: (value: string) => v
 function BackupTab({ onNotice }: { onNotice: (value: string) => void }) {
   const { actions } = useStockStore();
   const [exportText, setExportText] = useState("");
-  const [cloudEmail, setCloudEmail] = useState("");
-  const [cloudPassword, setCloudPassword] = useState("");
+  const [cloudEmail, setCloudEmail] = useState(() => {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem("stock-report-firebase-email") || "";
+});
+
+const [cloudPassword, setCloudPassword] = useState(() => {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem("stock-report-firebase-password") || "";
+});
   const [cloudBusy, setCloudBusy] = useState<"save" | "restore" | "save-live" | "restore-live" | "">("");
   const [autoLiveSync, setAutoLiveSync] = useState(false);
+useEffect(() => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("stock-report-firebase-email", cloudEmail);
+  localStorage.setItem("stock-report-firebase-password", cloudPassword);
+}, [cloudEmail, cloudPassword]);
   useEffect(() => {
   if (!autoLiveSync) return;
   if (!cloudEmail || !cloudPassword) return;
@@ -587,7 +599,7 @@ function BackupTab({ onNotice }: { onNotice: (value: string) => void }) {
     } catch (error) {
       console.error("Auto live sync failed", error);
     }
-  }, 300000);
+  }, 30000);
 
   return () => clearInterval(timer);
 }, [
@@ -608,7 +620,7 @@ function BackupTab({ onNotice }: { onNotice: (value: string) => void }) {
     } catch {
       // ignore background sync errors
     }
-  }, 300000); // 5 minutes
+  }, 30000); // 5 minutes
 
   return () => clearInterval(timer);
 }, [autoLiveSync, cloudEmail, cloudPassword, actions]);
