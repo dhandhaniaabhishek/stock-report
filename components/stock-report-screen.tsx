@@ -710,18 +710,21 @@ useEffect(() => {
         <TextInput value={cloudPassword} onChangeText={setCloudPassword} secureTextEntry placeholder="Firebase password" placeholderTextColor={colors.muted} style={inputStyle} />
 
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-<ActionButton
-  label={autoLiveSync ? "Auto Live Sync: ON" : "Auto Live Sync: OFF"}
-  onPress={() => setAutoLiveSync(!autoLiveSync)}
-/>
+  <ActionButton label={cloudBusy === "save" ? "Saving..." : "Save Backup"} tone="primary" onPress={saveToCloud} />
+  <ActionButton label={cloudBusy === "restore" ? "Restoring..." : "Restore Backup"} onPress={restoreFromCloud} />
+  <ActionButton label={cloudBusy === "save-live" ? "Saving..." : "Save Live Data"} tone="primary" onPress={saveLiveToCloud} />
+  <ActionButton label={cloudBusy === "restore-live" ? "Restoring..." : "Restore Live Data"} onPress={restoreLiveFromCloud} />
 
-<ActionButton
-  label={autoLiveRestore ? "Auto Restore Live: ON" : "Auto Restore Live: OFF"}
-  onPress={() => setAutoLiveRestore(!autoLiveRestore)}
-/>
-        </View>
-      </Panel>
+  <ActionButton
+    label={autoLiveSync ? "Auto Live Sync: ON" : "Auto Live Sync: OFF"}
+    onPress={() => setAutoLiveSync(!autoLiveSync)}
+  />
 
+  <ActionButton
+    label={autoLiveRestore ? "Auto Restore Live: ON" : "Auto Restore Live: OFF"}
+    onPress={() => setAutoLiveRestore(!autoLiveRestore)}
+  />
+</View>
       <Panel title="Saved Backup List">
         {backups.length ? backups.map((backup, index) => (
           <View key={`${backup.at}-${index}`} style={rowStyle}>
