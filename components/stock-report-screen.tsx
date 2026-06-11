@@ -572,6 +572,46 @@ function BackupTab({ onNotice }: { onNotice: (value: string) => void }) {
   const [cloudPassword, setCloudPassword] = useState("");
   const [cloudBusy, setCloudBusy] = useState<"save" | "restore" | "save-live" | "restore-live" | "">("");
   const [autoLiveSync, setAutoLiveSync] = useState(false);
+  useEffect(() => {
+  if (!autoLiveSync) return;
+  if (!cloudEmail || !cloudPassword) return;
+
+  const timer = setInterval(async () => {
+    try {
+      await actions.saveCloudLive({
+        email: cloudEmail,
+        password: cloudPassword,
+      });
+
+      console.log("Auto live sync completed");
+    } catch (error) {
+      console.error("Auto live sync failed", error);
+    }
+  }, 300000);
+
+  return () => clearInterval(timer);
+}, [
+  autoLiveSync,
+  cloudEmail,
+  cloudPassword,
+  actions,
+]);
+  useEffect(() => {
+  if (!autoLiveSync) return;
+
+  const timer = setInterval(async () => {
+    try {
+      await actions.saveCloudLive({
+        email: cloudEmail,
+        password: cloudPassword,
+      });
+    } catch {
+      // ignore background sync errors
+    }
+  }, 300000); // 5 minutes
+
+  return () => clearInterval(timer);
+}, [autoLiveSync, cloudEmail, cloudPassword, actions]);
   const firebaseReady = actions.firebaseBackupReady();
   const backups = stockSelectors.exportBackups();
 
