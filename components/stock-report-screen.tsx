@@ -571,6 +571,7 @@ function BackupTab({ onNotice }: { onNotice: (value: string) => void }) {
   const [cloudEmail, setCloudEmail] = useState("");
   const [cloudPassword, setCloudPassword] = useState("");
   const [cloudBusy, setCloudBusy] = useState<"save" | "restore" | "save-live" | "restore-live" | "">("");
+  const [autoLiveSync, setAutoLiveSync] = useState(false);
   const firebaseReady = actions.firebaseBackupReady();
   const backups = stockSelectors.exportBackups();
 
@@ -661,6 +662,10 @@ function BackupTab({ onNotice }: { onNotice: (value: string) => void }) {
           <ActionButton label={cloudBusy === "restore" ? "Restoring..." : "Restore Backup"} onPress={restoreFromCloud} />
           <ActionButton label={cloudBusy === "save-live" ? "Saving..." : "Save Live Data"} tone="primary" onPress={saveLiveToCloud} />
           <ActionButton label={cloudBusy === "restore-live" ? "Restoring..." : "Restore Live Data"} onPress={restoreLiveFromCloud} />
+<ActionButton
+  label={autoLiveSync ? "Auto Live Sync: ON" : "Auto Live Sync: OFF"}
+  onPress={() => setAutoLiveSync(!autoLiveSync)}
+/>
         </View>
       </Panel>
 
