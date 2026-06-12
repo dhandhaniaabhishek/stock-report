@@ -745,8 +745,8 @@ function firebaseBackupReady() {
 }
 
 async function saveCloudBackup(login: FirebaseLogin) {
-  const latest = useStockStore.getState().state;
-  const payload = await saveFirebaseBackup(compactStateForStorage(latest), login);
+  const latest = getState().state;
+const payload = await saveFirebaseBackup(compactStateForStorage(latest), login);
   return payload.exportedAt;
 }
 
@@ -760,7 +760,7 @@ async function restoreCloudBackup(login: FirebaseLogin) {
 }
 
 async function saveCloudLive(login: FirebaseLogin) {
-  const latest = useStockStore.getState().state;
+  const latest = getState().state;
   await saveFirebaseLive(compactStateForStorage(latest), login);
   return new Date().toISOString();
 }

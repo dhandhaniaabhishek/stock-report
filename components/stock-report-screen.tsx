@@ -1278,6 +1278,20 @@ function AuditReportRow({ audit }: { audit: AuditReport }) {
 
 function MessageRow({ message, onAction, actionLabel }: { message: EmployeeMessage; onAction: () => void; actionLabel: string }) {
   const user = stockSelectors.currentUser();
+useEffect(() => {
+  const user = stockSelectors.currentUser();
+
+  if (!user) return;
+  if (user.id === "admin") return;
+
+  const exists = state.staff.some((staff) => staff.id === user.id);
+
+  if (!exists) {
+    actions.logout();
+    onNotice("Your employee login was removed by admin.");
+  }
+}, [state.staff, actions, onNotice]);
+
   const read = (message.readBy || []).includes(user?.id || "");
   return (
     <View style={[rowStyle, { flexDirection: "column", alignItems: "stretch" }]}>
