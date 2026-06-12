@@ -1379,7 +1379,7 @@ function compactStateForStorage(state: StockLedgerState): Partial<StockLedgerSta
     transfers: state.transfers,
     customerApprovals: state.customerApprovals,
     articlePhotos: state.articlePhotos,
-    staff: state.staff,
+    staff: state.staff.filter((staff) => staff.active !== false || staff.id === "admin"),
     currentUserId: "",
     currentStoreId: state.currentStoreId,
     adminStoreFilter: state.adminStoreFilter,
